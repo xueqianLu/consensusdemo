@@ -271,6 +271,22 @@ func (s *RedisPool) LPop(key string) (string, error) {
 	return vv, nil
 }
 
+func (s *RedisPool) RPop(key string) (string, error) {
+	conn := s.pool.Get()
+	defer conn.Close()
+
+	v, err := conn.Do("rpop", key)
+	if err != nil {
+		return "", err
+	}
+
+	if v == nil {
+		return "", nil
+	}
+	vv := BytesToString(v.([]byte))
+	return vv, nil
+}
+
 func BytesToString(b []byte) string {
 	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
 	sh := reflect.StringHeader{bh.Data, bh.Len}

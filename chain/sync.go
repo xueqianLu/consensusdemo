@@ -26,6 +26,10 @@ func NewChainReader(url string, name string) *ChainReader {
 	return &ChainReader{client: client, name: name, logger: logger}
 }
 
+func (c *ChainReader) ChainName() string {
+	return c.name
+}
+
 func (c *ChainReader) SubscribeTransaction(addr common.Address, stop chan struct{}, report chan *types.Md5tx) error {
 
 	newHead := make(chan *ethtypes.Header, 100)
@@ -50,14 +54,23 @@ func (c *ChainReader) SubscribeTransaction(addr common.Address, stop chan struct
 			if e != nil {
 				log.Error("get block by number failed", "err", e)
 			} else {
-				for _, tx := range block.Transactions() {
+				//log.Debug("get new block ", "number ", header.Number)
+				for idx, tx := range block.Transactions() {
+					//from,err := c.client.TransactionSender(context.Background(), tx, block.Hash(), uint(idx))
+					//if err != nil {
+					//	log.Error("get transaction sender failed", "err", err)
+					//	continue
+					//}
+					//if bytes.Compare(from.Bytes(), addr.Bytes()) == 0 && len(tx.Data()) > 0 {
 					if bytes.Compare(tx.To().Bytes(), addr.Bytes()) == 0 && len(tx.Data()) > 0 {
+						//log.Debug("get new tx from monitor ", "data is ", hex.EncodeToString(tx.Data()))
 						t := &types.Md5tx{}
 						t.Blockhash = block.Hash().String()
 						t.Time = block.Time()
 						t.Tx = tx
 						report <- t
 					}
+					idx = idx
 				}
 			}
 		}

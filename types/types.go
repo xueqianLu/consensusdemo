@@ -30,8 +30,8 @@ func (t *Md5tx) Md5s() []string {
 }
 
 type TxPair struct {
-	Md5 string `json:"md5"`
-	Tx  string `json:"transaction"`
+	Md5 string          `json:"MD5"`
+	Tx  json.RawMessage `json:"Tx"`
 }
 
 func (t *TxPair) GetMd5() string {

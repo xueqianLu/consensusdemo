@@ -15,7 +15,11 @@ import (
 	"time"
 )
 
-func loop(rp *redispool.RedisPool, stop chan struct{}, allTx sync.Map) {
+var (
+	redisMQName = "list-luxq"
+)
+
+func loop(rp *redispool.RedisPool, stop chan struct{}, allTx *sync.Map) {
 	newtx := make(chan string, 1000000)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -26,7 +30,7 @@ func loop(rp *redispool.RedisPool, stop chan struct{}, allTx sync.Map) {
 			case <-stop:
 				return
 			default:
-				tx, _ := rp.LPop("Transactions")
+				tx, _ := rp.RPop(redisMQName)
 				if len(tx) == 0 {
 					time.Sleep(time.Microsecond * 50)
 				} else {
@@ -45,7 +49,10 @@ func loop(rp *redispool.RedisPool, stop chan struct{}, allTx sync.Map) {
 					// get tx pair from redis and save to map.
 					var pair types.TxPair
 					if err := json.Unmarshal([]byte(tx), &pair); err == nil {
-						allTx.Store(pair.GetMd5(), pair.GetTransaction())
+						log.Debug("got txpair from redis ", "md5 ", pair.Md5)
+						allTx.Store(pair.GetMd5(), &pair)
+					} else {
+						log.Error("unmarshal tx pair failed", "err", err)
 					}
 				}(tx)
 			case <-stop:
@@ -80,16 +87,31 @@ func InitLog(conf *config.Config) {
 	log.SetOutput(io.MultiWriter(logfile))
 }
 
-func readChain(reader *chain.ChainReader, stop chan struct{}, allTx sync.Map) {
+type txInfo struct {
+	pair      *types.TxPair
+	onchainTx *types.Md5tx
+}
+
+func readChain(reader *chain.ChainReader, stop chan struct{}, allTx *sync.Map, sortch chan *txInfo) {
 	newTx := make(chan *types.Md5tx, 1000)
 	addr := common.HexToAddress(config.GetConfig().Address())
 	go reader.SubscribeTransaction(addr, stop, newTx)
 	for {
 		select {
 		case tx := <-newTx:
-			for _, m := range tx.Md5s() {
-				if origialTx, ok := allTx.Load(m); !ok {
-
+			log.Debug("got new md5tx from chain ", reader.ChainName())
+			md5x := tx.Md5s()
+			for _, m := range md5x {
+				if txpair, ok := allTx.Load(m); !ok {
+					log.Error("not found original tx with md5 ", m)
+					continue
+				} else {
+					//log.Info("original packaged at chain", reader.ChainName(), "block time ", tx.Time)
+					info := &txInfo{
+						onchainTx: tx,
+						pair:      txpair.(*types.TxPair),
+					}
+					sortch <- info
 				}
 			}
 		}
@@ -97,6 +119,27 @@ func readChain(reader *chain.ChainReader, stop chan struct{}, allTx sync.Map) {
 
 }
 
+func sortTx(receive chan *txInfo) {
+	var maxPackTxs = 100
+	var packtxs = make([]*txInfo, 0, maxPackTxs)
+	for {
+		select {
+		case info, ok := <-receive:
+			if !ok {
+				return
+			}
+			log.Debug("in sortTx ", "got tx info", "md5 ", info.pair.Md5)
+			packtxs = append(packtxs, info)
+			if len(packtxs) == maxPackTxs {
+				log.Info("package tx finished.")
+				// todo: packtxs sorting with timestamp and md5.
+
+				packtxs = make([]*txInfo, 0, maxPackTxs)
+			}
+		}
+	}
+
+}
 func main() {
 	conf := config.GetConfig()
 	InitLog(conf)
@@ -111,13 +154,16 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
-	allTxMap := sync.Map{}
+	allTxMap := &sync.Map{}
 	stop := make(chan struct{})
 	chains := conf.Chains()
+
+	var fullTxCh = make(chan *txInfo, 10000000)
+	go sortTx(fullTxCh)
 	go loop(db, stop, allTxMap)
 	for name, rpc := range chains {
 		reader := chain.NewChainReader(rpc, name)
-		go readChain(reader, stop, allTxMap)
+		go readChain(reader, stop, allTxMap, fullTxCh)
 	}
 
 	wg.Wait()

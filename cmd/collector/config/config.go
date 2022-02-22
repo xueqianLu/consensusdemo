@@ -59,7 +59,7 @@ func (c *Config) LogLevel() string {
 func (c *Config) LogFile() string {
 	name := c.cfg.Section("log").Key("filename").String()
 	if len(name) == 0 {
-		name = "collect.log"
+		name = "consensus.log"
 	}
 	filename := filepath.Join("logs", name)
 	return filename
