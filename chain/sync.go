@@ -57,13 +57,13 @@ func (c *ChainReader) SubscribeTransaction(addr common.Address, stop chan struct
 			} else {
 				//log.Debug("get new block ", "number ", header.Number)
 				for idx, tx := range block.Transactions() {
-					//from,err := c.client.TransactionSender(context.Background(), tx, block.Hash(), uint(idx))
-					//if err != nil {
-					//	log.Error("get transaction sender failed", "err", err)
-					//	continue
-					//}
-					//if bytes.Compare(from.Bytes(), addr.Bytes()) == 0 && len(tx.Data()) > 0 {
-					if bytes.Compare(tx.To().Bytes(), addr.Bytes()) == 0 && len(tx.Data()) > 0 {
+					from, err := c.client.TransactionSender(context.Background(), tx, block.Hash(), uint(idx))
+					if err != nil {
+						log.Error("get transaction sender failed", "err", err)
+						continue
+					}
+					if bytes.Compare(from.Bytes(), addr.Bytes()) == 0 && len(tx.Data()) > 0 {
+						//if bytes.Compare(tx.To().Bytes(), addr.Bytes()) == 0 && len(tx.Data()) > 0 {
 						log.Debug("get new tx from monitor ", "data is ", hex.EncodeToString(tx.Data()))
 						t := &types.TxPackage{}
 						t.Blockhash = block.Hash().String()
