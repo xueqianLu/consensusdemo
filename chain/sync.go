@@ -3,6 +3,7 @@ package chain
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -30,7 +31,7 @@ func (c *ChainReader) ChainName() string {
 	return c.name
 }
 
-func (c *ChainReader) SubscribeTransaction(addr common.Address, stop chan struct{}, report chan *types.Md5tx) error {
+func (c *ChainReader) SubscribeTransaction(addr common.Address, stop chan struct{}, report chan *types.TxPackage) error {
 
 	newHead := make(chan *ethtypes.Header, 100)
 	sub, err := c.client.SubscribeNewHead(context.Background(), newHead)
@@ -63,8 +64,8 @@ func (c *ChainReader) SubscribeTransaction(addr common.Address, stop chan struct
 					//}
 					//if bytes.Compare(from.Bytes(), addr.Bytes()) == 0 && len(tx.Data()) > 0 {
 					if bytes.Compare(tx.To().Bytes(), addr.Bytes()) == 0 && len(tx.Data()) > 0 {
-						//log.Debug("get new tx from monitor ", "data is ", hex.EncodeToString(tx.Data()))
-						t := &types.Md5tx{}
+						log.Debug("get new tx from monitor ", "data is ", hex.EncodeToString(tx.Data()))
+						t := &types.TxPackage{}
 						t.Blockhash = block.Hash().String()
 						t.Time = block.Time()
 						t.Tx = tx

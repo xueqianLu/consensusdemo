@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	redisMQName = "list-luxq"
+	redisMQName = "list"
 )
 
 func loop(rp *redispool.RedisPool, stop chan struct{}, allTx *sync.Map) {
@@ -30,7 +30,10 @@ func loop(rp *redispool.RedisPool, stop chan struct{}, allTx *sync.Map) {
 			case <-stop:
 				return
 			default:
-				tx, _ := rp.RPop(redisMQName)
+				tx, err := rp.RPop(redisMQName)
+				if err != nil {
+					log.Error("redis rpop", "err", err)
+				}
 				if len(tx) == 0 {
 					time.Sleep(time.Microsecond * 50)
 				} else {
@@ -49,8 +52,8 @@ func loop(rp *redispool.RedisPool, stop chan struct{}, allTx *sync.Map) {
 					// get tx pair from redis and save to map.
 					var pair types.TxPair
 					if err := json.Unmarshal([]byte(tx), &pair); err == nil {
-						log.Debug("got txpair from redis ", "md5 ", pair.Md5)
-						allTx.Store(pair.GetMd5(), &pair)
+						log.Debug("got txpair from redis ", "hash ", pair.GetHash())
+						allTx.Store(pair.GetHash(), &pair)
 					} else {
 						log.Error("unmarshal tx pair failed", "err", err)
 					}
@@ -89,19 +92,19 @@ func InitLog(conf *config.Config) {
 
 type txInfo struct {
 	pair      *types.TxPair
-	onchainTx *types.Md5tx
+	onchainTx *types.TxPackage
 }
 
 func readChain(reader *chain.ChainReader, stop chan struct{}, allTx *sync.Map, sortch chan *txInfo) {
-	newTx := make(chan *types.Md5tx, 1000)
+	newTx := make(chan *types.TxPackage, 1000)
 	addr := common.HexToAddress(config.GetConfig().Address())
 	go reader.SubscribeTransaction(addr, stop, newTx)
 	for {
 		select {
 		case tx := <-newTx:
 			log.Debug("got new md5tx from chain ", reader.ChainName())
-			md5x := tx.Md5s()
-			for _, m := range md5x {
+			hashs := tx.Hashs()
+			for _, m := range hashs {
 				if txpair, ok := allTx.Load(m); !ok {
 					log.Error("not found original tx with md5 ", m)
 					continue
@@ -128,7 +131,10 @@ func sortTx(receive chan *txInfo) {
 			if !ok {
 				return
 			}
-			log.Debug("in sortTx ", "got tx info", "md5 ", info.pair.Md5)
+			log.Debug("in sortTx ", "got tx info", "hash ", info.pair.Hash)
+			txs := info.pair.GetTransactions()
+			maxPackTxs = maxPackTxs + len(txs) - len(txs)
+
 			packtxs = append(packtxs, info)
 			if len(packtxs) == maxPackTxs {
 				log.Info("package tx finished.")

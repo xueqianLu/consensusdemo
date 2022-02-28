@@ -2,47 +2,60 @@ package types
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"github.com/ethereum/go-ethereum/core/types"
+	log "github.com/sirupsen/logrus"
 )
 
-type Md5tx struct {
+type TxPackage struct {
 	Time      uint64
 	Blockhash string
 	Tx        *types.Transaction
 }
 
-func (t *Md5tx) TimeStamp() uint64 {
+func (t *TxPackage) TimeStamp() uint64 {
 	return t.Time
 }
 
-func (t *Md5tx) BlockHash() string {
+func (t *TxPackage) BlockHash() string {
 	return t.Blockhash
 }
-func (t *Md5tx) Md5s() []string {
+func (t *TxPackage) Hashs() []string {
+	unitLen := 32
 	var m = make([]string, 0)
 	var data = t.Tx.Data()
-	for i := 0; len(data) >= (i + 16); i += 16 {
-		s := hex.EncodeToString(data[i : i+16])
+	for i := 0; len(data) >= (i + unitLen); i += unitLen {
+		s := hex.EncodeToString(data[i : i+unitLen])
 		m = append(m, s)
 	}
 	return m
 }
 
+type TxWithFrom struct {
+	From    []byte `json:"From"`
+	TxBytes []byte `json:"TxBytes"`
+}
+
 type TxPair struct {
-	Md5 string          `json:"MD5"`
-	Tx  json.RawMessage `json:"Tx"`
+	Hash []byte       `json:"Hash"`
+	Txs  []TxWithFrom `json:"Txs"`
 }
 
-func (t *TxPair) GetMd5() string {
-	return t.Md5
+func (t *TxPair) GetHash() string {
+	return hex.EncodeToString(t.Hash)
 }
 
-func (t *TxPair) GetTransaction() *types.Transaction {
-	var tx types.Transaction
-	err := json.Unmarshal([]byte(t.Tx), &tx)
-	if err != nil {
-		return nil
+func (t *TxPair) GetTransactions() []*FurtherTransaction {
+	var txs = make([]*FurtherTransaction, 0)
+	for _, tx := range t.Txs {
+		t := FurtherTransaction{}
+		err := t.UnmarshalBinary([]byte(tx.TxBytes))
+		if err != nil {
+			log.Error("decode rlp tx ", "err", err)
+			continue
+		}
+		t.From.SetBytes(tx.From)
+		txs = append(txs, &t)
+		log.Info("got transaction with ", "from", t.From, "tx ", t.Transaction)
 	}
-	return &tx
+	return txs
 }
