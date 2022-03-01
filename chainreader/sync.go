@@ -3,7 +3,6 @@ package chainreader
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -57,7 +56,7 @@ func (c *ChainReader) SubscribeTransaction(addr common.Address, stop chan struct
 			if e != nil {
 				c.logger.Error("get block by number failed", "err", e)
 			} else {
-				c.logger.Debug("get new block ", "number ", header.Number)
+				//c.logger.Debug("get new block ", "number ", header.Number)
 				for idx, tx := range block.Transactions() {
 					from, err := c.client.TransactionSender(context.Background(), tx, block.Hash(), uint(idx))
 					if err != nil {
@@ -66,7 +65,7 @@ func (c *ChainReader) SubscribeTransaction(addr common.Address, stop chan struct
 					}
 					if bytes.Compare(from.Bytes(), addr.Bytes()) == 0 && len(tx.Data()) > 0 {
 						//if bytes.Compare(tx.To().Bytes(), addr.Bytes()) == 0 && len(tx.Data()) > 0 {
-						c.logger.Debug("get new tx from monitor ", "data is ", hex.EncodeToString(tx.Data()))
+						//c.logger.Debug("get new tx from monitor ", "data is ", hex.EncodeToString(tx.Data()))
 						t := &types.TxPackage{}
 						t.Blockhash = block.Hash().String()
 						t.Time = block.Time()

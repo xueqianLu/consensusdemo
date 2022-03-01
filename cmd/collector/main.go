@@ -6,6 +6,7 @@ import (
 	"github.com/hashrs/consensusdemo/chainreader"
 	"github.com/hashrs/consensusdemo/cmd/collector/config"
 	"github.com/hashrs/consensusdemo/core"
+	"github.com/hashrs/consensusdemo/core/db"
 	"github.com/hashrs/consensusdemo/core/miner"
 	"github.com/hashrs/consensusdemo/redispool"
 	"github.com/hashrs/consensusdemo/types"
@@ -60,7 +61,7 @@ func loop(rp *redispool.RedisPool, stop chan struct{}, allTx *sync.Map, idx int)
 					// get tx pair from redis and save to map.
 					var pair types.TxPair
 					if err := json.Unmarshal([]byte(tx), &pair); err == nil {
-						l.Debug("got txpair from redis ", "hash ", pair.GetHash(), " with tx count ", len(pair.GetTransactions()))
+						//l.Debug("got txpair from redis ", "hash ", pair.GetHash(), " with tx count ", len(pair.GetTransactions()))
 						//txs := pair.GetTransactions()
 						//
 						//for _,t := range txs {
@@ -112,7 +113,7 @@ func readChain(reader *chainreader.ChainReader, stop chan struct{}, allTx *sync.
 	for {
 		select {
 		case tx := <-newTx:
-			log.Debug("got new package tx from chainreader ", reader.ChainName())
+			//log.Debug("got new package tx from chainreader ", reader.ChainName())
 			hashs := tx.Hashs()
 			for _, m := range hashs {
 				if txpair, ok := allTx.Load(m); !ok {
@@ -133,25 +134,28 @@ func main() {
 	conf := config.GetConfig()
 	InitLog(conf)
 	hosts, dbNum, passwd := conf.RedisConn()
-	db, err := redispool.NewRedisPool(hosts, dbNum, passwd)
+	r, err := redispool.NewRedisPool(hosts, dbNum, passwd)
 	if err != nil {
 		log.Fatal("redis connect failed")
 	}
 	log.Info("redis connect succeed.")
-	defer db.Close()
+	defer r.Close()
 
 	allTxMap := &sync.Map{}
 	stop := make(chan struct{})
 	chains := conf.Chains()
 
-	worker := miner.NewMiner()
+	chaindb := db.NewChainDB()
+	globaldb := db.NewGlobalDB()
+
+	worker := miner.NewMiner(globaldb, chaindb)
 	txpool := worker.TxPool()
 	worker.Start()
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	for i := 0; i < 10; i++ {
-		go loop(db, stop, allTxMap, i)
+		go loop(r, stop, allTxMap, i)
 	}
 	for name, rpc := range chains {
 		reader := chainreader.NewChainReader(rpc, name)

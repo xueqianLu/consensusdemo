@@ -2,6 +2,7 @@ package db
 
 import (
 	"github.com/hashrs/consensusdemo/core"
+	log "github.com/sirupsen/logrus"
 	"math/big"
 	"sync"
 )
@@ -36,6 +37,7 @@ func (m *memChaindb) GetBlock(num *big.Int) *core.Block {
 }
 func (m *memChaindb) SaveBlock(block *core.Block) error {
 	m.state.Store(block.Header.Number.Uint64(), block)
-	m.height = block.Header.Number
+	m.height = new(big.Int).Set(block.Header.Number)
+	log.Println("save block set height to ", "h ", m.height)
 	return nil
 }

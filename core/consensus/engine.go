@@ -18,11 +18,11 @@ type Engine interface {
 	MakeBlock(txs []*core.FurtherTransaction) *core.Block
 }
 
-func NewEngine() Engine {
+func NewEngine(globaldb db.GlobalDB, chaindb db.ChainDB) Engine {
 
 	return &dummyEngine{
-		chaindb:  db.NewChainDB(),
-		globaldb: db.NewGlobalDB(),
+		chaindb:  chaindb,
+		globaldb: globaldb,
 	}
 }
 
