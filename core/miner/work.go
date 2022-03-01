@@ -47,12 +47,12 @@ func (m *Miner) txPoolLoop() {
 			}
 			packtxs = append(packtxs, txs...)
 			if len(packtxs) >= maxPackTxs {
-				m.lentry.Info("package tx finished.", "total txs ", len(packtxs))
+				//m.lentry.Info("package tx finished.", "total txs ", len(packtxs))
 				m.packageCh <- packtxs
 				packtxs = make([]*core.FurtherTransaction, 0, maxPackTxs)
 			}
 		case <-tm.C:
-			m.lentry.Info("package tx with timeout.", "total txs ", len(packtxs))
+			//m.lentry.Info("package tx with timeout.", "total txs ", len(packtxs))
 			m.packageCh <- packtxs
 			packtxs = make([]*core.FurtherTransaction, 0, maxPackTxs)
 		}
