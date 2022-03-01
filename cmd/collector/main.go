@@ -91,7 +91,7 @@ func InitLog(conf *config.Config) {
 	default:
 		log.SetLevel(log.InfoLevel)
 	}
-	logfile, err := os.OpenFile(conf.LogFile(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModeAppend|755)
+	logfile, err := os.OpenFile(conf.LogFile(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModeAppend|0755)
 	//logfile, err := os.OpenFile(conf.LogFile(), os.O_WRONLY|os.O_CREATE, 0755)
 	if err != nil {
 		log.Error("can't open log file", conf.LogFile())
