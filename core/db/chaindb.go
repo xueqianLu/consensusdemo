@@ -1,0 +1,39 @@
+package db
+
+import (
+	"github.com/hashrs/consensusdemo/core"
+	"math/big"
+	"sync"
+)
+
+type ChainDB interface {
+	CurrentHeight() *big.Int
+	GetBlock(*big.Int) *core.Block
+	SaveBlock(*core.Block) error
+}
+
+func NewChainDB() ChainDB {
+	return &memChaindb{}
+}
+
+type memChaindb struct {
+	state  sync.Map
+	height *big.Int
+}
+
+func (m *memChaindb) CurrentHeight() *big.Int {
+	return m.height
+}
+
+func (m *memChaindb) GetBlock(num *big.Int) *core.Block {
+	if block, exist := m.state.Load(num.Uint64()); exist {
+		return block.(*core.Block)
+	} else {
+		return nil
+	}
+}
+func (m *memChaindb) SaveBlock(block *core.Block) error {
+	m.state.Store(block.Header.Number.Uint64(), block)
+	m.height = block.Header.Number
+	return nil
+}

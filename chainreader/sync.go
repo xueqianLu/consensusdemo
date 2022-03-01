@@ -1,4 +1,4 @@
-package chain
+package chainreader
 
 import (
 	"bytes"
@@ -20,10 +20,10 @@ type ChainReader struct {
 func NewChainReader(url string, name string) *ChainReader {
 	client, e := ethclient.Dial(url)
 	if e != nil {
-		log.Error("create chain reader failed, dial url err :", e)
+		log.Error("create chainreader reader failed, dial url err :", e)
 		return nil
 	}
-	logger := log.WithField("chain", name)
+	logger := log.WithField("chainreader", name)
 	return &ChainReader{client: client, name: name, logger: logger}
 }
 
@@ -45,7 +45,7 @@ func (c *ChainReader) SubscribeTransaction(addr common.Address, stop chan struct
 		case <-stop:
 			break
 		case e := <-sub.Err():
-			log.Errorf("chain reader on %s sunscribe error %s\n", c.name, e.Error())
+			log.Errorf("chainreader reader on %s sunscribe error %s\n", c.name, e.Error())
 			break
 		case header, ok := <-newHead:
 			if !ok {

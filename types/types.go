@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/hex"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/hashrs/consensusdemo/core"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -44,10 +45,10 @@ func (t *TxPair) GetHash() string {
 	return hex.EncodeToString(t.Hash)
 }
 
-func (t *TxPair) GetTransactions() []*FurtherTransaction {
-	var txs = make([]*FurtherTransaction, 0)
+func (t *TxPair) GetTransactions() []*core.FurtherTransaction {
+	var txs = make([]*core.FurtherTransaction, 0)
 	for _, tx := range t.Txs {
-		t := FurtherTransaction{}
+		t := core.FurtherTransaction{}
 		err := t.UnmarshalBinary([]byte(tx.TxBytes))
 		if err != nil {
 			log.Error("decode rlp tx ", "err", err)
