@@ -55,7 +55,7 @@ func (t *TxPair) GetTransactions() []*FurtherTransaction {
 		}
 		t.From.SetBytes(tx.From)
 		txs = append(txs, &t)
-		log.Info("got transaction with ", "from", t.From, "tx ", t.Transaction)
+		//log.Info("got transaction with ", "from", t.From, "tx ", t.Transaction)
 	}
 	return txs
 }
