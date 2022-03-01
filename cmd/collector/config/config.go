@@ -36,7 +36,7 @@ func (c *Config) RedisConn() (conn string, dbNum string, passwd string) {
 }
 
 func (c *Config) Chains() map[string]string {
-	keys := c.cfg.Section("chainreader").Keys()
+	keys := c.cfg.Section("chain").Keys()
 	var chain = make(map[string]string)
 	for _, key := range keys {
 		chain[key.Name()] = key.Value()

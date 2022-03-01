@@ -18,12 +18,13 @@ type ChainReader struct {
 }
 
 func NewChainReader(url string, name string) *ChainReader {
+	logger := log.WithField("chain", name)
 	client, e := ethclient.Dial(url)
 	if e != nil {
-		log.Error("create chainreader reader failed, dial url err :", e)
+		logger.Error("create chainreader reader failed, dial url err :", e)
 		return nil
 	}
-	logger := log.WithField("chainreader", name)
+
 	return &ChainReader{client: client, name: name, logger: logger}
 }
 
@@ -36,16 +37,17 @@ func (c *ChainReader) SubscribeTransaction(addr common.Address, stop chan struct
 	newHead := make(chan *ethtypes.Header, 100)
 	sub, err := c.client.SubscribeNewHead(context.Background(), newHead)
 	if err != nil {
-		log.Error("subscribe new head failed, err:", err)
+		c.logger.Error("subscribe new head failed, err:", err)
 		return err
 	}
 	defer sub.Unsubscribe()
+	c.logger.Info("subcribe new head succeed")
 	for {
 		select {
 		case <-stop:
 			break
 		case e := <-sub.Err():
-			log.Errorf("chainreader reader on %s sunscribe error %s\n", c.name, e.Error())
+			c.logger.Errorf("chainreader reader on %s sunscribe error %s\n", c.name, e.Error())
 			break
 		case header, ok := <-newHead:
 			if !ok {
@@ -53,18 +55,18 @@ func (c *ChainReader) SubscribeTransaction(addr common.Address, stop chan struct
 			}
 			block, e := c.client.BlockByNumber(context.Background(), header.Number)
 			if e != nil {
-				log.Error("get block by number failed", "err", e)
+				c.logger.Error("get block by number failed", "err", e)
 			} else {
-				//log.Debug("get new block ", "number ", header.Number)
+				c.logger.Debug("get new block ", "number ", header.Number)
 				for idx, tx := range block.Transactions() {
 					from, err := c.client.TransactionSender(context.Background(), tx, block.Hash(), uint(idx))
 					if err != nil {
-						log.Error("get transaction sender failed", "err", err)
+						c.logger.Error("get transaction sender failed", "err", err)
 						continue
 					}
 					if bytes.Compare(from.Bytes(), addr.Bytes()) == 0 && len(tx.Data()) > 0 {
 						//if bytes.Compare(tx.To().Bytes(), addr.Bytes()) == 0 && len(tx.Data()) > 0 {
-						log.Debug("get new tx from monitor ", "data is ", hex.EncodeToString(tx.Data()))
+						c.logger.Debug("get new tx from monitor ", "data is ", hex.EncodeToString(tx.Data()))
 						t := &types.TxPackage{}
 						t.Blockhash = block.Hash().String()
 						t.Time = block.Time()
