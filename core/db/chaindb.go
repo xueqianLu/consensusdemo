@@ -13,7 +13,9 @@ type ChainDB interface {
 }
 
 func NewChainDB() ChainDB {
-	return &memChaindb{}
+	return &memChaindb{
+		height: big.NewInt(0),
+	}
 }
 
 type memChaindb struct {
