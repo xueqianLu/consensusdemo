@@ -28,6 +28,15 @@ func GetConfig() *Config {
 	return gConfig
 }
 
+func (c *Config) TxPoolRoutines() uint {
+	threads, err := c.cfg.Section("txpool").Key("routines").Uint()
+	if err != nil {
+		return 10
+	} else {
+		return threads
+	}
+}
+
 func (c *Config) RedisConn() (conn string, dbNum string, passwd string) {
 	conn = c.cfg.Section("redis").Key("conn").String()
 	dbNum = c.cfg.Section("redis").Key("dbNum").String()
@@ -63,4 +72,12 @@ func (c *Config) LogFile() string {
 	}
 	filename := filepath.Join("logs", name)
 	return filename
+}
+
+func (c *Config) APIServerAddr() string {
+	addr := c.cfg.Section("apiserver").Key("addr").String()
+	if len(addr) == 0 {
+		addr = "127.0.0.1:9800"
+	}
+	return addr
 }

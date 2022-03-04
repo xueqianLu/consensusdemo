@@ -1,9 +1,9 @@
-package db
+package globaldb
 
 import (
 	"github.com/hashrs/consensusdemo/core"
+	"github.com/hashrs/consensusdemo/db"
 	"math/big"
-	"sync"
 )
 
 type GlobalDB interface {
@@ -12,20 +12,20 @@ type GlobalDB interface {
 	AddBalance(core.Account, *big.Int) *big.Int
 }
 
-func NewGlobalDB() GlobalDB {
+func NewGlobalDB(database db.Database) GlobalDB {
 	return &memglobaldb{}
 }
 
 type memglobaldb struct {
-	state sync.Map
+	state db.Database
 }
 
 func (m *memglobaldb) setValue(addr *core.Account, value *big.Int) {
-	m.state.Store(*addr, value)
+	m.state.Set(*addr, value)
 }
 
 func (m *memglobaldb) getValue(addr *core.Account) *big.Int {
-	if balance, exist := m.state.Load(*addr); exist {
+	if balance, exist := m.state.Get(*addr); exist {
 		return balance.(*big.Int)
 	} else {
 		return new(big.Int)

@@ -2,9 +2,11 @@ package types
 
 import (
 	"encoding/hex"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/hashrs/consensusdemo/core"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/sha3"
+	"math/big"
 )
 
 type TxPackage struct {
@@ -45,10 +47,10 @@ func (t *TxPair) GetHash() string {
 	return hex.EncodeToString(t.Hash)
 }
 
-func (t *TxPair) GetTransactions() []*core.FurtherTransaction {
-	var txs = make([]*core.FurtherTransaction, 0)
+func (t *TxPair) GetTransactions() []*FurtherTransaction {
+	var txs = make([]*FurtherTransaction, 0)
 	for _, tx := range t.Txs {
-		t := core.FurtherTransaction{}
+		t := FurtherTransaction{}
 		err := t.UnmarshalBinary([]byte(tx.TxBytes))
 		if err != nil {
 			log.Error("decode rlp tx ", "err", err)
@@ -59,4 +61,71 @@ func (t *TxPair) GetTransactions() []*core.FurtherTransaction {
 		//log.Info("got transaction with ", "from", t.From, "tx ", t.Transaction)
 	}
 	return txs
+}
+
+type RoundInfo struct {
+	Timestamp uint64       `json:"time"`
+	Txsinfo   []*TxPackage `json:"package"`
+}
+
+type Hash struct {
+	common.Hash
+}
+
+type FurtherTransaction struct {
+	types.Transaction
+	From common.Address
+}
+
+func (t FurtherTransaction) Hash() Hash {
+	h := t.Transaction.Hash()
+	return Hash{h}
+}
+
+type FurtherTransactions []*FurtherTransaction
+
+func (f FurtherTransactions) IndexData(idx int) Hash {
+	return f[idx].Hash()
+}
+func (f FurtherTransactions) Length() int {
+	return len(f)
+}
+
+type Receipt struct {
+	Status      int            `json:"status"`
+	Txhash      Hash           `json:"hash"`
+	From        common.Address `json:"from"`
+	To          common.Address `json:"to"`
+	Value       *big.Int       `json:"value"`
+	BlockNumber *big.Int       `json:"block"`
+	Timestamp   int64          `json:"time"`
+}
+
+func (r *Receipt) Data() []byte {
+	var b = make([]byte, 0)
+	b = append(b, big.NewInt(int64(r.Status)).Bytes()...)
+	b = append(b, r.Txhash.Bytes()...)
+	b = append(b, r.From.Bytes()...)
+	b = append(b, r.To.Bytes()...)
+	b = append(b, r.Value.Bytes()...)
+	b = append(b, r.BlockNumber.Bytes()...)
+	b = append(b, big.NewInt(r.Timestamp).Bytes()...)
+	return b
+}
+
+func (r *Receipt) Hash() Hash {
+	d := r.Data()
+	hash := Hash{}
+	h := sha3.Sum256(d)
+	hash.SetBytes(h[:])
+	return hash
+}
+
+type Receipts []*Receipt
+
+func (rs Receipts) IndexData(idx int) Hash {
+	return rs[idx].Hash()
+}
+func (rs Receipts) Length() int {
+	return len(rs)
 }

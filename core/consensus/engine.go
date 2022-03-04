@@ -1,10 +1,11 @@
 package consensus
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/hashrs/consensusdemo/core"
-	"github.com/hashrs/consensusdemo/core/db"
-	"golang.org/x/crypto/sha3"
+	"github.com/hashrs/consensusdemo/core/chaindb"
+	"github.com/hashrs/consensusdemo/core/globaldb"
+	"github.com/hashrs/consensusdemo/lib"
+	"github.com/hashrs/consensusdemo/types"
 	"math/big"
 )
 
@@ -15,10 +16,10 @@ var (
 
 type Engine interface {
 	CheckMiner() bool
-	MakeBlock(txs []*core.FurtherTransaction) *core.Block
+	MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) *core.Block
 }
 
-func NewEngine(globaldb db.GlobalDB, chaindb db.ChainDB) Engine {
+func NewEngine(globaldb globaldb.GlobalDB, chaindb chaindb.ChainDB) Engine {
 
 	return &dummyEngine{
 		chaindb:  chaindb,
@@ -27,43 +28,72 @@ func NewEngine(globaldb db.GlobalDB, chaindb db.ChainDB) Engine {
 }
 
 type dummyEngine struct {
-	chaindb  db.ChainDB
-	globaldb db.GlobalDB
+	chaindb  chaindb.ChainDB
+	globaldb globaldb.GlobalDB
 }
 
 func (c *dummyEngine) CheckMiner() bool {
 	return true
 }
 
-func (c *dummyEngine) MakeBlock(txs []*core.FurtherTransaction) *core.Block {
+func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) *core.Block {
 	cur := c.chaindb.CurrentHeight()
 	last := c.chaindb.GetBlock(cur)
-	parent := common.Hash{}
-	if last != nil {
-		parent = last.Header.Hash
-	}
+	parent := types.Hash{}
 
-	c.exec(txs)
+	if last != nil {
+		parent = last.Hash()
+	}
+	header.Number = new(big.Int).Add(cur, big1)
+	header.Parent = parent
 
 	block := &core.Block{
-		Header: core.BlockHeader{
-			Parent: parent,
-			Number: new(big.Int).Add(cur, big1),
-		},
+		Header: *header,
 		Body: core.BlockBody{
 			Txs: txs,
 		},
 	}
-	block.Header.Hash = sha3.Sum256(parent.Bytes())
+	receipts := c.exec(block)
+
+	block.Header.ReceiptRoot = lib.HashSlices(types.Receipts(receipts))
+	block.Header.TxRoot = lib.HashSlices(types.FurtherTransactions(txs))
+
 	return block
 }
 
-func (c *dummyEngine) exec(txs []*core.FurtherTransaction) error {
-	for _, tx := range txs {
-		if tx.Value().Cmp(big0) != 0 {
-			c.globaldb.SubBalance(core.Account(tx.From), tx.Value())
-			c.globaldb.AddBalance(core.Account(*tx.To()), tx.Value())
+func (c *dummyEngine) exec(block *core.Block) []*types.Receipt {
+	var receipts = make([]*types.Receipt, 0)
+	for _, tx := range block.Body.Txs {
+		r := &types.Receipt{
+			Txhash:      tx.Hash(),
+			From:        tx.From,
+			To:          *tx.To(),
+			Timestamp:   int64(block.Header.Timestamp),
+			Value:       new(big.Int).Set(tx.Value()),
+			BlockNumber: new(big.Int).Set(block.Header.Number),
 		}
+		if c.CanTransfer(core.Account{tx.From}, core.Account{*tx.To()}, tx.Value()) {
+			c.Transfer(core.Account{tx.From}, core.Account{*tx.To()}, tx.Value())
+			r.Status = 1
+		} else {
+			r.Status = 0
+		}
+		receipts = append(receipts, r)
 	}
+	return receipts
+}
+
+func (c *dummyEngine) ExecBlock(block *core.Block) []*types.Receipt {
+	return c.exec(block)
+}
+
+func (c *dummyEngine) CanTransfer(from core.Account, to core.Account, value *big.Int) bool {
+	balance := c.globaldb.GetBalance(from)
+	return value.Cmp(big0) == 0 || balance.Cmp(value) > 0
+}
+
+func (c *dummyEngine) Transfer(from core.Account, to core.Account, value *big.Int) error {
+	c.globaldb.SubBalance(from, value)
+	c.globaldb.AddBalance(to, value)
 	return nil
 }
