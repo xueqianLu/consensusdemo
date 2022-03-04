@@ -61,7 +61,8 @@ func formatReceiptInfo(receipt *types.Receipt) map[string]interface{} {
 	var info = make(map[string]interface{})
 	info["from"] = receipt.From.String()
 	info["to"] = receipt.To.String()
-	info["time"] = receipt.Timestamp
+	info["packedtime"] = receipt.PackedTime
+	info["exectime"] = receipt.ExecTime
 	info["block"] = receipt.BlockNumber.Text(10)
 	info["value"] = receipt.Value.Text(10)
 	info["hash"] = receipt.Txhash.String()

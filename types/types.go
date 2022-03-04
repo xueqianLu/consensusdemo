@@ -98,7 +98,8 @@ type Receipt struct {
 	To          common.Address `json:"to"`
 	Value       *big.Int       `json:"value"`
 	BlockNumber *big.Int       `json:"block"`
-	Timestamp   int64          `json:"time"`
+	PackedTime  int64          `json:"packtime"`
+	ExecTime    int64          `json:"exectime"`
 }
 
 func (r *Receipt) Data() []byte {
@@ -109,7 +110,8 @@ func (r *Receipt) Data() []byte {
 	b = append(b, r.To.Bytes()...)
 	b = append(b, r.Value.Bytes()...)
 	b = append(b, r.BlockNumber.Bytes()...)
-	b = append(b, big.NewInt(r.Timestamp).Bytes()...)
+	b = append(b, big.NewInt(r.PackedTime).Bytes()...)
+	b = append(b, big.NewInt(r.ExecTime).Bytes()...)
 	return b
 }
 

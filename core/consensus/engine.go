@@ -7,6 +7,7 @@ import (
 	"github.com/hashrs/consensusdemo/lib"
 	"github.com/hashrs/consensusdemo/types"
 	"math/big"
+	"time"
 )
 
 var (
@@ -69,7 +70,8 @@ func (c *dummyEngine) exec(block *core.Block) []*types.Receipt {
 			Txhash:      tx.Hash(),
 			From:        tx.From,
 			To:          *tx.To(),
-			Timestamp:   int64(block.Header.Timestamp),
+			PackedTime:  int64(block.Header.Timestamp),
+			ExecTime:    time.Now().Unix(),
 			Value:       new(big.Int).Set(tx.Value()),
 			BlockNumber: new(big.Int).Set(block.Header.Number),
 		}
