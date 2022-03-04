@@ -17,6 +17,7 @@ var (
 type Engine interface {
 	CheckMiner() bool
 	MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) *core.Block
+	ExecBlock(block *core.Block) []*types.Receipt
 }
 
 func NewEngine(globaldb globaldb.GlobalDB, chaindb chaindb.ChainDB) Engine {

@@ -64,6 +64,8 @@ func formatReceiptInfo(receipt *types.Receipt) map[string]interface{} {
 	info["time"] = receipt.Timestamp
 	info["block"] = receipt.BlockNumber.Text(10)
 	info["value"] = receipt.Value.Text(10)
+	info["hash"] = receipt.Txhash.String()
+	info["status"] = receipt.Status
 
 	return info
 }
@@ -74,6 +76,7 @@ func formatTransactionInfo(tx *types.FurtherTransaction) map[string]interface{} 
 	info["to"] = tx.To().String()
 	info["nonce"] = tx.Nonce()
 	info["value"] = tx.Value().Text(10)
+	info["hash"] = tx.Hash().String()
 
 	return info
 }

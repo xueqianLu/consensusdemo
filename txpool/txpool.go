@@ -38,6 +38,7 @@ func NewTxpool(conf *config.Config) *TxPool {
 }
 
 func (t *TxPool) Start() {
+	//log.Debug("txpool start ", "routines ", t.routines)
 	for i := uint(0); i < t.routines; i++ {
 		t.wg.Add(1)
 		go t.loop(i)
@@ -53,7 +54,7 @@ func (t *TxPool) GetTxs(packedHash string) []*types.FurtherTransaction {
 	if v, exist := t.allTx.Load(packedHash); !exist {
 		return []*types.FurtherTransaction{}
 	} else {
-		pair := v.(types.TxPair)
+		pair := v.(*types.TxPair)
 		return pair.GetTransactions()
 	}
 }
@@ -78,8 +79,9 @@ func (t *TxPool) loop(idx uint) {
 				}
 				if len(tx) == 0 {
 					//l.Debug("got 0 tx from redis")
-					time.Sleep(time.Millisecond * 10)
+					time.Sleep(time.Millisecond * 100)
 				} else {
+					//l.Debug("got tx from redis, ", " count ", len(tx))
 					newtx <- tx
 				}
 			}
@@ -96,6 +98,7 @@ func (t *TxPool) loop(idx uint) {
 					// get tx pair from redis and save to map.
 					var pair types.TxPair
 					if err := json.Unmarshal([]byte(tx), &pair); err == nil {
+						//l.Debug("save redis tx to map")
 						t.allTx.Store(pair.GetHash(), &pair)
 					} else {
 						l.Error("unmarshal tx pair failed", "err", err)

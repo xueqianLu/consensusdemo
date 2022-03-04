@@ -100,6 +100,16 @@ func (m *Miner) genBlock() {
 			}
 			block := m.engine.MakeBlock(header, prepared.packedtxs)
 			m.chain.SaveBlock(block)
+
+			txs := block.Body.Txs
+			for _, tx := range txs {
+				m.chain.SaveTransaction(tx)
+			}
+			receipts := m.engine.ExecBlock(block)
+			for _, r := range receipts {
+				m.chain.SaveReceipt(r)
+			}
+
 			m.lentry.Info("mined new block ", " number ", block.Header.Number.Uint64(), " txs ", len(block.Body.Txs))
 		}
 	}
