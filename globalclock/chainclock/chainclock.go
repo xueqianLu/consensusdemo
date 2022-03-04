@@ -41,7 +41,7 @@ func (c *ChainClock) ChainName() string {
 	return c.name
 }
 
-func (c *ChainClock) start() error {
+func (c *ChainClock) Start() error {
 	newHead := make(chan *ethtypes.Header, 100)
 	sub, err := c.client.SubscribeNewHead(context.Background(), newHead)
 	if err != nil {
@@ -70,7 +70,7 @@ func (c *ChainClock) start() error {
 			if e != nil {
 				c.logger.Error("get block by number failed", "err", e)
 			} else {
-				//c.logger.Debug("get new block ", "number ", header.Number)
+				c.logger.Debug("get new block ", "number ", header.Number)
 				for idx, tx := range block.Transactions() {
 					from, err := c.client.TransactionSender(context.Background(), tx, block.Hash(), uint(idx))
 					if err != nil {
@@ -96,8 +96,9 @@ func (c *ChainClock) start() error {
 	}
 }
 
-func (c *ChainClock) stop() {
+func (c *ChainClock) Stop() error {
 	close(c.closed)
+	return nil
 }
 
 func (c *ChainClock) WatchClock() chan types.RoundInfo {

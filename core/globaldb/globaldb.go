@@ -8,24 +8,27 @@ import (
 
 type GlobalDB interface {
 	GetBalance(core.Account) *big.Int
+	SetBalance(core.Account, *big.Int)
 	SubBalance(core.Account, *big.Int) *big.Int
 	AddBalance(core.Account, *big.Int) *big.Int
 }
 
 func NewGlobalDB(database db.Database) GlobalDB {
-	return &memglobaldb{}
+	return &memglobaldb{
+		state: database,
+	}
 }
 
 type memglobaldb struct {
 	state db.Database
 }
 
-func (m *memglobaldb) setValue(addr *core.Account, value *big.Int) {
-	m.state.Set(*addr, value)
+func (m *memglobaldb) setValue(addr core.Account, value *big.Int) {
+	m.state.Set(addr, value)
 }
 
-func (m *memglobaldb) getValue(addr *core.Account) *big.Int {
-	if balance, exist := m.state.Get(*addr); exist {
+func (m *memglobaldb) getValue(addr core.Account) *big.Int {
+	if balance, exist := m.state.Get(addr); exist {
 		return balance.(*big.Int)
 	} else {
 		return new(big.Int)
@@ -33,19 +36,24 @@ func (m *memglobaldb) getValue(addr *core.Account) *big.Int {
 }
 
 func (m *memglobaldb) GetBalance(addr core.Account) *big.Int {
-	return m.getValue(&addr)
+	return m.getValue(addr)
 }
 
 func (m *memglobaldb) SubBalance(addr core.Account, value *big.Int) *big.Int {
-	c := m.getValue(&addr)
+	c := m.getValue(addr)
 	r := new(big.Int).Sub(c, value)
-	m.setValue(&addr, r)
+	m.setValue(addr, r)
 	return r
 }
 
 func (m *memglobaldb) AddBalance(addr core.Account, value *big.Int) *big.Int {
-	c := m.getValue(&addr)
+	c := m.getValue(addr)
 	r := new(big.Int).Add(c, value)
-	m.setValue(&addr, r)
+	m.setValue(addr, r)
 	return r
+}
+
+func (m *memglobaldb) SetBalance(addr core.Account, value *big.Int) {
+	r := new(big.Int).Set(value)
+	m.setValue(addr, r)
 }

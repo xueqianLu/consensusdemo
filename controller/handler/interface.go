@@ -14,4 +14,5 @@ type ChainReader interface {
 
 type GlobalReader interface {
 	GetBalance(addr core.Account) *big.Int
+	SetBalance(addr core.Account, amount *big.Int)
 }

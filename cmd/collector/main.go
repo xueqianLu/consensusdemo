@@ -40,6 +40,7 @@ func main() {
 	cnode := node.NewNode(conf)
 	cnode.Start()
 
+	log.Info("go to start miner ")
 	worker := cnode.Miner()
 	worker.Start()
 

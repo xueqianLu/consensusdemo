@@ -11,11 +11,13 @@ import (
 )
 
 func InitRouter(hand handler.ApiHandler, r *gin.Engine) {
-	v1 := r.Group("/v1")
-	v1.GET("/transaction/:txhash", hand.GetTransaction)
-	v1.GET("/receipt/:txhash", hand.GetReceipt)
-	v1.GET("/account/:address", hand.GetAccount)
-	v1.GET("/block/:number", hand.GetBlock)
+	api := r.Group("/api")
+	v1 := api.Group("/v1")
+	v1.GET("/transaction", hand.GetTransaction)
+	v1.GET("/receipt", hand.GetReceipt)
+	v1.GET("/balance", hand.GetAccount)
+	v1.GET("/block", hand.GetBlock)
+	v1.POST("/initaccount", hand.InitAccount)
 }
 
 type APIServer struct {

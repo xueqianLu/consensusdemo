@@ -9,6 +9,8 @@ import (
 
 type Clock interface {
 	WatchClock() chan types.RoundInfo
+	Start() error
+	Stop() error
 }
 
 func NewClock(conf *config.Config) Clock {

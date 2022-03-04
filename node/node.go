@@ -8,6 +8,7 @@ import (
 	"github.com/hashrs/consensusdemo/core/miner"
 	"github.com/hashrs/consensusdemo/db/storagedb"
 	"github.com/hashrs/consensusdemo/txpool"
+	log "github.com/sirupsen/logrus"
 )
 
 type Node struct {
@@ -36,8 +37,11 @@ func NewNode(conf *config.Config) *Node {
 }
 
 func (n *Node) Start() {
+	log.Info("node start")
 	n.txp.Start()
+	log.Info("txpool started")
 	go n.server.Start()
+	log.Info("api server started")
 }
 
 func (n *Node) Miner() *miner.Miner {
