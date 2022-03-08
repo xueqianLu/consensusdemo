@@ -59,6 +59,12 @@ func (t *TxPool) GetTxs(packedHash string) []*types.FurtherTransaction {
 	}
 }
 
+func (t *TxPool) ResetTxs(packedhashs []string) {
+	for _, hash := range packedhashs {
+		t.allTx.Delete(hash)
+	}
+}
+
 func (t *TxPool) loop(idx uint) {
 	defer t.wg.Done()
 

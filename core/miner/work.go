@@ -77,6 +77,7 @@ func (m *Miner) roundloop() {
 						m.packageCh <- newPrepareBlock{roundInfo.Timestamp, committxs}
 						committxs = make([]*types.FurtherTransaction, 0, maxPackTxs)
 					}
+					m.txp.ResetTxs(hashes)
 				}
 			}
 			m.packageCh <- newPrepareBlock{roundInfo.Timestamp, committxs}
