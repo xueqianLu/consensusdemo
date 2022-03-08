@@ -103,10 +103,10 @@ func (t *TxPool) loop(idx uint) {
 				go func(cachetx string) {
 					// get tx pair from redis and save to map.
 					var pair types.TxPair
-					l.Debug("got tx from redis, ", " hash ", pair.GetHash())
 					if err := json.Unmarshal([]byte(tx), &pair); err == nil {
 						//l.Debug("save redis tx to map")
 						t.allTx.Store(pair.GetHash(), &pair)
+						l.Debug("got tx from redis, ", " hash ", pair.GetHash())
 					} else {
 						l.Error("unmarshal tx pair failed", "err", err)
 					}
