@@ -68,7 +68,8 @@ func (m *Miner) roundloop() {
 					for len(txs) == 0 {
 						// if tx is not get in txpool, wait forever.
 						// todo: implement timeout.
-						time.Sleep(time.Millisecond * 10)
+						m.lentry.Debug("worker got txs not found", "batch hash ", hash)
+						time.Sleep(time.Millisecond * 200)
 						txs = m.txp.GetTxs(hash)
 					}
 

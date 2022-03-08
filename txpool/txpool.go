@@ -87,7 +87,7 @@ func (t *TxPool) loop(idx uint) {
 					//l.Debug("got 0 tx from redis")
 					time.Sleep(time.Millisecond * 100)
 				} else {
-					//l.Debug("got tx from redis, ", " count ", len(tx))
+					//l.Debug("got tx from redis, ", " hash ",)
 					newtx <- tx
 				}
 			}
@@ -103,6 +103,7 @@ func (t *TxPool) loop(idx uint) {
 				go func(cachetx string) {
 					// get tx pair from redis and save to map.
 					var pair types.TxPair
+					l.Debug("got tx from redis, ", " hash ", pair.GetHash())
 					if err := json.Unmarshal([]byte(tx), &pair); err == nil {
 						//l.Debug("save redis tx to map")
 						t.allTx.Store(pair.GetHash(), &pair)
