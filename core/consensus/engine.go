@@ -17,7 +17,7 @@ var (
 
 type Engine interface {
 	CheckMiner() bool
-	MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) *core.Block
+	MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) (*core.Block, []*types.Receipt)
 	ExecBlock(block *core.Block) []*types.Receipt
 }
 
@@ -38,7 +38,7 @@ func (c *dummyEngine) CheckMiner() bool {
 	return true
 }
 
-func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) *core.Block {
+func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) (*core.Block, []*types.Receipt) {
 	cur := c.chaindb.CurrentHeight()
 	last := c.chaindb.GetBlock(cur)
 	parent := types.Hash{}
@@ -60,7 +60,7 @@ func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTr
 	block.Header.ReceiptRoot = lib.HashSlices(types.Receipts(receipts))
 	block.Header.TxRoot = lib.HashSlices(types.FurtherTransactions(txs))
 
-	return block
+	return block, receipts
 }
 
 func (c *dummyEngine) exec(block *core.Block) []*types.Receipt {

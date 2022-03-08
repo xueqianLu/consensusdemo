@@ -99,14 +99,14 @@ func (m *Miner) genBlock() {
 			header := &core.BlockHeader{
 				Timestamp: prepared.timestamp,
 			}
-			block := m.engine.MakeBlock(header, prepared.packedtxs)
+			block, receipts := m.engine.MakeBlock(header, prepared.packedtxs)
 			m.chain.SaveBlock(block)
 
 			txs := block.Body.Txs
 			for _, tx := range txs {
 				m.chain.SaveTransaction(tx)
 			}
-			receipts := m.engine.ExecBlock(block)
+
 			for _, r := range receipts {
 				m.chain.SaveReceipt(r)
 			}
