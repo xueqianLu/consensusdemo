@@ -25,11 +25,11 @@ type statedb struct {
 
 func (m *statedb) setValue(addr core.Account, value *big.Int) {
 	v := value.Text(10)
-	m.state.Set(addr, v)
+	m.state.Set(addr.String(), v)
 }
 
 func (m *statedb) getValue(addr core.Account) *big.Int {
-	if v, exist := m.state.Get(addr); exist {
+	if v, exist := m.state.Get(addr.String()); exist {
 		balance, _ := new(big.Int).SetString(v.(string), 10)
 		return balance
 	} else {
