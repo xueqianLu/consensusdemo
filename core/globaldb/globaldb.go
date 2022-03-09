@@ -14,46 +14,48 @@ type GlobalDB interface {
 }
 
 func NewGlobalDB(database db.Database) GlobalDB {
-	return &memglobaldb{
+	return &statedb{
 		state: database,
 	}
 }
 
-type memglobaldb struct {
+type statedb struct {
 	state db.Database
 }
 
-func (m *memglobaldb) setValue(addr core.Account, value *big.Int) {
-	m.state.Set(addr, value)
+func (m *statedb) setValue(addr core.Account, value *big.Int) {
+	v := value.Text(10)
+	m.state.Set(addr, v)
 }
 
-func (m *memglobaldb) getValue(addr core.Account) *big.Int {
-	if balance, exist := m.state.Get(addr); exist {
-		return balance.(*big.Int)
+func (m *statedb) getValue(addr core.Account) *big.Int {
+	if v, exist := m.state.Get(addr); exist {
+		balance, _ := new(big.Int).SetString(v.(string), 10)
+		return balance
 	} else {
 		return new(big.Int)
 	}
 }
 
-func (m *memglobaldb) GetBalance(addr core.Account) *big.Int {
+func (m *statedb) GetBalance(addr core.Account) *big.Int {
 	return m.getValue(addr)
 }
 
-func (m *memglobaldb) SubBalance(addr core.Account, value *big.Int) *big.Int {
+func (m *statedb) SubBalance(addr core.Account, value *big.Int) *big.Int {
 	c := m.getValue(addr)
 	r := new(big.Int).Sub(c, value)
 	m.setValue(addr, r)
 	return r
 }
 
-func (m *memglobaldb) AddBalance(addr core.Account, value *big.Int) *big.Int {
+func (m *statedb) AddBalance(addr core.Account, value *big.Int) *big.Int {
 	c := m.getValue(addr)
 	r := new(big.Int).Add(c, value)
 	m.setValue(addr, r)
 	return r
 }
 
-func (m *memglobaldb) SetBalance(addr core.Account, value *big.Int) {
+func (m *statedb) SetBalance(addr core.Account, value *big.Int) {
 	r := new(big.Int).Set(value)
 	m.setValue(addr, r)
 }

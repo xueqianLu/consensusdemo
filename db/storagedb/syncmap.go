@@ -1,7 +1,7 @@
 package storagedb
 
 import (
-	"github.com/hashrs/consensusdemo/db"
+	"github.com/hashrs/consensusdemo/config"
 	"sync"
 )
 
@@ -23,6 +23,6 @@ func (s *syncmapdb) Set(key, value interface{}) error {
 	return nil
 }
 
-func NewStorageDB() db.Database {
+func newSyncMapDB(conf *config.Config) *syncmapdb {
 	return &syncmapdb{}
 }

@@ -44,6 +44,13 @@ func (c *Config) RedisConn() (conn string, dbNum string, passwd string) {
 	return
 }
 
+func (c *Config) StorageConn() (conn string, dbNum string, passwd string) {
+	conn = c.cfg.Section("storage").Key("conn").String()
+	dbNum = c.cfg.Section("storage").Key("dbNum").String()
+	passwd = c.cfg.Section("storage").Key("password").String()
+	return
+}
+
 func (c *Config) Chains() map[string]string {
 	keys := c.cfg.Section("chain").Keys()
 	var chain = make(map[string]string)

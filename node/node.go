@@ -24,8 +24,8 @@ func NewNode(conf *config.Config) *Node {
 	node := &Node{
 		conf: conf,
 	}
-	chainDB := storagedb.NewStorageDB()
-	stateDB := storagedb.NewStorageDB()
+	chainDB := storagedb.NewStorageDB(conf)
+	stateDB := storagedb.NewStorageDB(conf)
 	node.chain = chaindb.NewChainDB(chainDB)
 	node.global = globaldb.NewGlobalDB(stateDB)
 

@@ -1,6 +1,7 @@
 package chaindb
 
 import (
+	"encoding/json"
 	"github.com/hashrs/consensusdemo/core"
 	"github.com/hashrs/consensusdemo/db"
 	"github.com/hashrs/consensusdemo/types"
@@ -30,9 +31,10 @@ type memChaindb struct {
 }
 
 func (m *memChaindb) saveHeight(n *big.Int) {
-	h := n.Int64()
+	h := n.Text(10)
 	k := chainHeightKey()
-	m.database.Set(k, h)                // db save int64
+	m.database.Set(k, h) // db save string base 10
+
 	m.height.Store(new(big.Int).Set(n)) // cache save *big.Int
 }
 
@@ -43,7 +45,7 @@ func (m *memChaindb) CurrentHeight() *big.Int {
 	} else {
 		h, exist := m.database.Get(chainHeightKey())
 		if exist {
-			height = big.NewInt(h.(int64))
+			height, _ = new(big.Int).SetString(h.(string), 10)
 		}
 		m.height.Store(new(big.Int).Set(height))
 	}
@@ -52,8 +54,13 @@ func (m *memChaindb) CurrentHeight() *big.Int {
 
 func (m *memChaindb) GetBlock(num *big.Int) *core.Block {
 	k := blockKey(num)
-	if block, exist := m.database.Get(k); exist {
-		return block.(*core.Block)
+	if data, exist := m.database.Get(k); exist {
+		var block core.Block
+		if err := json.Unmarshal([]byte(data.(string)), &block); err != nil {
+			return nil
+		}
+
+		return &block
 	} else {
 		return nil
 	}
@@ -61,25 +68,32 @@ func (m *memChaindb) GetBlock(num *big.Int) *core.Block {
 
 func (m *memChaindb) SaveBlock(block *core.Block) error {
 	k := blockKey(block.Header.Number)
-	m.database.Set(k, block)
+	v, _ := json.Marshal(block)
+	m.database.Set(k, string(v))
 	m.saveHeight(block.Header.Number)
 	return nil
 }
 
 func (m *memChaindb) SaveTransaction(tx *types.FurtherTransaction) {
 	k := transactionKey(tx.Hash())
-	m.database.Set(k, tx)
+	v, _ := json.Marshal(tx)
+	m.database.Set(k, string(v))
 }
 
 func (m *memChaindb) SaveReceipt(r *types.Receipt) {
 	k := receiptKey(r.Txhash)
-	m.database.Set(k, r)
+	v, _ := json.Marshal(r)
+	m.database.Set(k, string(v))
 }
 
 func (m *memChaindb) GetTransaction(hash types.Hash) *types.FurtherTransaction {
 	k := transactionKey(hash)
-	if tx, exist := m.database.Get(k); exist {
-		return tx.(*types.FurtherTransaction)
+	if data, exist := m.database.Get(k); exist {
+		var tx types.FurtherTransaction
+		if err := json.Unmarshal([]byte(data.(string)), &tx); err != nil {
+			return nil
+		}
+		return &tx
 	} else {
 		return nil
 	}
@@ -87,8 +101,13 @@ func (m *memChaindb) GetTransaction(hash types.Hash) *types.FurtherTransaction {
 }
 func (m *memChaindb) GetReceipt(hash types.Hash) *types.Receipt {
 	k := receiptKey(hash)
-	if r, exist := m.database.Get(k); exist {
-		return r.(*types.Receipt)
+	if data, exist := m.database.Get(k); exist {
+		var r types.Receipt
+		if err := json.Unmarshal([]byte(data.(string)), &r); err != nil {
+			return nil
+		}
+
+		return &r
 	} else {
 		return nil
 	}
