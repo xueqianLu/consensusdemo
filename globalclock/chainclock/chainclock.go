@@ -8,6 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/hashrs/consensusdemo/types"
 	log "github.com/sirupsen/logrus"
+	"sync"
+	"time"
 )
 
 type ChainClock struct {
@@ -16,6 +18,7 @@ type ChainClock struct {
 	reporter common.Address
 	client   *ethclient.Client
 	watcher  chan types.RoundInfo
+	history  sync.Map
 	closed   chan struct{}
 }
 
@@ -34,6 +37,35 @@ func NewChainClock(url string, name string, reporter string) *ChainClock {
 		logger:   logger,
 		closed:   make(chan struct{}),
 		watcher:  nil,
+	}
+}
+
+func (c *ChainClock) addToHistory(block *ethtypes.Block) {
+	c.history.Store(block.ParentHash(), time.Now())
+}
+
+func (c *ChainClock) inHistory(block *ethtypes.Block) bool {
+	_, exist := c.history.Load(block.ParentHash())
+	return exist
+}
+
+func (c *ChainClock) fit() {
+	ticker := time.NewTicker(time.Second * 120)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			n := time.Now()
+			c.history.Range(func(k, v interface{}) bool {
+				tm := v.(time.Time)
+				if n.Sub(tm).Seconds() > 3600 {
+					c.history.Delete(k)
+				}
+				return true
+			})
+		case <-c.closed:
+			return
+		}
 	}
 }
 
@@ -70,6 +102,10 @@ func (c *ChainClock) Start() error {
 			if e != nil {
 				c.logger.Error("get block by number failed", "err", e)
 			} else {
+				if c.inHistory(block) {
+					continue
+				}
+				c.addToHistory(block)
 				c.logger.Debug("get new block ", "number ", header.Number)
 				for idx, tx := range block.Transactions() {
 					from, err := c.client.TransactionSender(context.Background(), tx, block.Hash(), uint(idx))

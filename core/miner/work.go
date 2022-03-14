@@ -64,6 +64,7 @@ func (m *Miner) roundloop() {
 			for _, packed := range packedtxs {
 				hashes := packed.Hashs()
 				for _, hash := range hashes {
+					m.lentry.Debug("worker get txs", "hash ", hash, "current round time is ", roundInfo.Timestamp)
 					txs := m.txp.GetTxs(hash)
 					for len(txs) == 0 {
 						// if tx is not get in txpool, wait forever.
