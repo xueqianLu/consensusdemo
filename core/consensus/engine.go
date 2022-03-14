@@ -92,7 +92,7 @@ func (c *dummyEngine) ExecBlock(block *core.Block) []*types.Receipt {
 
 func (c *dummyEngine) CanTransfer(from core.Account, to core.Account, value *big.Int) bool {
 	balance := c.globaldb.GetBalance(from)
-	return value.Cmp(big0) == 0 || balance.Cmp(value) > 0
+	return value.Cmp(big0) == 0 || balance.Cmp(value) >= 0
 }
 
 func (c *dummyEngine) Transfer(from core.Account, to core.Account, value *big.Int) error {
