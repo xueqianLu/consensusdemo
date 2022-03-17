@@ -4,8 +4,9 @@ import (
 	"github.com/hashrs/consensusdemo/core"
 	"github.com/hashrs/consensusdemo/core/chaindb"
 	"github.com/hashrs/consensusdemo/core/globaldb"
-	"github.com/hashrs/consensusdemo/lib"
+	//"github.com/hashrs/consensusdemo/lib"
 	"github.com/hashrs/consensusdemo/types"
+	log "github.com/sirupsen/logrus"
 	"math/big"
 	"time"
 )
@@ -26,12 +27,14 @@ func NewEngine(globaldb globaldb.GlobalDB, chaindb chaindb.ChainDB) Engine {
 	return &dummyEngine{
 		chaindb:  chaindb,
 		globaldb: globaldb,
+		lentry: log.WithField("consensus", "dummy"),
 	}
 }
 
 type dummyEngine struct {
 	chaindb  chaindb.ChainDB
 	globaldb globaldb.GlobalDB
+	lentry *log.Entry
 }
 
 func (c *dummyEngine) CheckMiner() bool {
@@ -56,9 +59,11 @@ func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTr
 		},
 	}
 	receipts := c.exec(block)
-
-	block.Header.ReceiptRoot = lib.HashSlices(types.Receipts(receipts))
-	block.Header.TxRoot = lib.HashSlices(types.FurtherTransactions(txs))
+	c.lentry.Debug("before calc receipt root")
+	block.Header.ReceiptRoot = types.Hash{} //lib.HashSlices(types.Receipts(receipts))
+	c.lentry.Debug("after calc receipt root")
+	block.Header.TxRoot = types.Hash{} //lib.HashSlices(types.FurtherTransactions(txs))
+	c.lentry.Debug("after calc transaction root")
 
 	return block, receipts
 }
