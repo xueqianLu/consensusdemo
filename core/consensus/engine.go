@@ -27,14 +27,14 @@ func NewEngine(globaldb globaldb.GlobalDB, chaindb chaindb.ChainDB) Engine {
 	return &dummyEngine{
 		chaindb:  chaindb,
 		globaldb: globaldb,
-		lentry: log.WithField("consensus", "dummy"),
+		lentry:   log.WithField("consensus", "dummy"),
 	}
 }
 
 type dummyEngine struct {
 	chaindb  chaindb.ChainDB
 	globaldb globaldb.GlobalDB
-	lentry *log.Entry
+	lentry   *log.Entry
 }
 
 func (c *dummyEngine) CheckMiner() bool {
@@ -59,11 +59,8 @@ func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTr
 		},
 	}
 	receipts := c.exec(block)
-	c.lentry.Debug("before calc receipt root")
 	block.Header.ReceiptRoot = types.Hash{} //lib.HashSlices(types.Receipts(receipts))
-	c.lentry.Debug("after calc receipt root")
-	block.Header.TxRoot = types.Hash{} //lib.HashSlices(types.FurtherTransactions(txs))
-	c.lentry.Debug("after calc transaction root")
+	block.Header.TxRoot = types.Hash{}      //lib.HashSlices(types.FurtherTransactions(txs))
 
 	return block, receipts
 }
