@@ -54,8 +54,8 @@ func (t *TxPool) GetTxs(packedHash string) []*types.FurtherTransaction {
 	if v, exist := t.allTx.Load(packedHash); !exist {
 		return []*types.FurtherTransaction{}
 	} else {
-		pair := v.(*types.TxPair)
-		return pair.GetTransactions()
+		txs := v.([]*types.FurtherTransaction)
+		return txs
 	}
 }
 
@@ -105,7 +105,8 @@ func (t *TxPool) loop(idx uint) {
 					var pair types.TxPair
 					if err := json.Unmarshal([]byte(tx), &pair); err == nil {
 						//l.Debug("save redis tx to map")
-						t.allTx.Store(pair.GetHash(), &pair)
+						txs := pair.GetTransactions()
+						t.allTx.Store(pair.GetHash(), txs)
 						l.Debug("got tx from redis, ", " hash ", pair.GetHash())
 					} else {
 						l.Error("unmarshal tx pair failed", "err", err)
