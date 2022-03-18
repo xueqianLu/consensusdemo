@@ -24,13 +24,14 @@ type statedb struct {
 }
 
 func (m *statedb) setValue(addr core.Account, value *big.Int) {
-	v := value.Text(10)
-	m.state.Set(addr.String(), v)
+	//v := value.Text(10)
+	m.state.Set(addr, value)
 }
 
 func (m *statedb) getValue(addr core.Account) *big.Int {
-	if v, exist := m.state.Get(addr.String()); exist {
-		balance, _ := new(big.Int).SetString(v.(string), 10)
+	if v, exist := m.state.Get(addr); exist {
+		balance := v.(*big.Int)
+		//balance, _ := new(big.Int).SetString(v.(string), 10)
 		return balance
 	} else {
 		return new(big.Int)

@@ -76,7 +76,7 @@ func (m *Miner) roundloop() {
 
 					committxs = append(committxs, txs...)
 					if len(committxs) >= maxPackTxs {
-						m.lentry.Debug("worker send to make package")
+						//m.lentry.Debug("worker send to make package")
 						m.packageCh <- newPrepareBlock{roundInfo.Timestamp, committxs}
 						committxs = make([]*types.FurtherTransaction, 0, maxPackTxs)
 					}
@@ -102,21 +102,22 @@ func (m *Miner) genBlock() {
 			header := &core.BlockHeader{
 				Timestamp: prepared.timestamp,
 			}
+			m.lentry.Debug("worker start make block")
 			block, receipts := m.engine.MakeBlock(header, prepared.packedtxs)
-			//m.lentry.Info("worker after make block, go to save block")
+			m.lentry.Info("worker after make block, go to save block")
 			m.chain.SaveBlock(block)
-			//m.lentry.Info("worker after save block")
+			m.lentry.Info("worker after save block")
 
 			txs := block.Body.Txs
 			for _, tx := range txs {
 				m.chain.SaveTransaction(tx)
 			}
-			//m.lentry.Info("worker after save transaction ")
+			m.lentry.Info("worker after save transaction ")
 
 			for _, r := range receipts {
 				m.chain.SaveReceipt(r)
 			}
-			//m.lentry.Info("worker after save receipts")
+			m.lentry.Info("worker after save receipts")
 
 			m.lentry.Info("mined new block ", " number ", block.Header.Number.Uint64(), " txs ", len(block.Body.Txs))
 		}
