@@ -61,7 +61,8 @@ func (m *statedb) getValue(addr core.Account) *big.Int {
 		return balance
 	}
 
-	if v, exist := m.state.Get(addr); exist {
+	k := keyAccount(addr)
+	if v, exist := m.state.Get(k); exist {
 		balance, _ := new(big.Int).SetString(string(v), 10)
 		m.cache.Set(addr, balance)
 		return balance
