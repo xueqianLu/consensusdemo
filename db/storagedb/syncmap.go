@@ -9,16 +9,21 @@ type syncmapdb struct {
 	db sync.Map
 }
 
-func (s *syncmapdb) Get(key interface{}) (interface{}, bool) {
+func (s *syncmapdb) Get(key interface{}) ([]byte, bool) {
 	v, ok := s.db.Load(key)
 	if !ok {
 		return nil, false
 	} else {
-		return v, true
+		return v.([]byte), true
 	}
 }
 
-func (s *syncmapdb) Set(key, value interface{}) error {
+func (s *syncmapdb) Del(key interface{}) error {
+	s.db.Delete(key)
+	return nil
+}
+
+func (s *syncmapdb) Set(key interface{}, value []byte) error {
 	s.db.Store(key, value)
 	return nil
 }

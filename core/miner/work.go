@@ -109,16 +109,11 @@ func (m *Miner) genBlock() {
 			m.lentry.Info("worker after save block")
 
 			txs := block.Body.Txs
-			for _, tx := range txs {
-				m.chain.SaveTransaction(tx)
-			}
+			m.chain.SaveTransactions(txs)
 			m.lentry.Info("worker after save transaction ")
 
-			for _, r := range receipts {
-				m.chain.SaveReceipt(r)
-			}
+			m.chain.SaveReceipts(receipts)
 			m.lentry.Info("worker after save receipts")
-
 			m.lentry.Info("mined new block ", " number ", block.Header.Number.Uint64(), " txs ", len(block.Body.Txs))
 		}
 	}

@@ -23,6 +23,11 @@ func (s *syncmapdb) Set(key, value interface{}) error {
 	return nil
 }
 
-func NewMemDB() db.Database {
+func (s *syncmapdb) Del(key interface{}) error {
+	s.db.Delete(key)
+	return nil
+}
+
+func NewMemDB() db.CacheKV {
 	return &syncmapdb{}
 }

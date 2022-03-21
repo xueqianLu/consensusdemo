@@ -1,12 +1,16 @@
 package globaldb
 
 import (
+	"fmt"
 	"github.com/hashrs/consensusdemo/core"
 	"github.com/hashrs/consensusdemo/db"
+	"github.com/hashrs/consensusdemo/db/memdb"
 	"math/big"
+	"sync"
 )
 
 type GlobalDB interface {
+	Commit() error
 	GetBalance(core.Account) *big.Int
 	SetBalance(core.Account, *big.Int)
 	SubBalance(core.Account, *big.Int) *big.Int
@@ -15,27 +19,54 @@ type GlobalDB interface {
 
 func NewGlobalDB(database db.Database) GlobalDB {
 	return &statedb{
+		cache: memdb.NewMemDB(),
 		state: database,
 	}
 }
 
 type statedb struct {
+	cache db.CacheKV
+	dirty sync.Map
 	state db.Database
 }
 
+func keyAccount(addr core.Account) string {
+	return fmt.Sprintf("ac-%s", addr.String())
+}
+
+func (m *statedb) commit() error {
+	m.dirty.Range(func(key, value interface{}) bool {
+		addr := key.(core.Account)
+		balan := value.(*big.Int)
+		k := keyAccount(addr)
+		v := balan.Text(10)
+		m.state.Set(k, []byte(v))
+
+		m.dirty.Delete(key)
+		return true
+	})
+	return nil
+}
+
 func (m *statedb) setValue(addr core.Account, value *big.Int) {
-	//v := value.Text(10)
-	m.state.Set(addr, value)
+	m.dirty.Store(addr, value)
 }
 
 func (m *statedb) getValue(addr core.Account) *big.Int {
-	if v, exist := m.state.Get(addr); exist {
-		balance := v.(*big.Int)
-		//balance, _ := new(big.Int).SetString(v.(string), 10)
-		return balance
-	} else {
-		return new(big.Int)
+	if v, exist := m.dirty.Load(addr); exist {
+		return v.(*big.Int)
 	}
+	if v, exist := m.cache.Get(addr); exist {
+		balance := v.(*big.Int)
+		return balance
+	}
+
+	if v, exist := m.state.Get(addr); exist {
+		balance, _ := new(big.Int).SetString(string(v), 10)
+		m.cache.Set(addr, balance)
+		return balance
+	}
+	return new(big.Int)
 }
 
 func (m *statedb) GetBalance(addr core.Account) *big.Int {
@@ -59,4 +90,8 @@ func (m *statedb) AddBalance(addr core.Account, value *big.Int) *big.Int {
 func (m *statedb) SetBalance(addr core.Account, value *big.Int) {
 	r := new(big.Int).Set(value)
 	m.setValue(addr, r)
+}
+
+func (m *statedb) Commit() error {
+	return m.commit()
 }

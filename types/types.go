@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	log "github.com/sirupsen/logrus"
@@ -82,6 +83,10 @@ func (t FurtherTransaction) Hash() Hash {
 	return Hash{h}
 }
 
+func (t *FurtherTransaction) Encode() ([]byte, error) {
+	return json.Marshal(t)
+}
+
 type FurtherTransactions []*FurtherTransaction
 
 func (f FurtherTransactions) IndexData(idx int) Hash {
@@ -113,6 +118,10 @@ func (r *Receipt) Data() []byte {
 	b = append(b, big.NewInt(r.PackedTime).Bytes()...)
 	b = append(b, big.NewInt(r.ExecTime).Bytes()...)
 	return b
+}
+
+func (r *Receipt) Encode() ([]byte, error) {
+	return json.Marshal(r)
 }
 
 func (r *Receipt) Hash() Hash {

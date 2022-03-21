@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/json"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/hashrs/consensusdemo/types"
 	"golang.org/x/crypto/sha3"
@@ -20,6 +21,10 @@ func (b *Block) Hash() types.Hash {
 	h := sha3.Sum256(data)
 	hash.SetBytes(h[:])
 	return hash
+}
+
+func (b *Block) Encode() ([]byte, error) {
+	return json.Marshal(b)
 }
 
 type BlockBody struct {
