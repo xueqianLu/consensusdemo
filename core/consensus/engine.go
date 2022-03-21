@@ -20,6 +20,7 @@ type Engine interface {
 	CheckMiner() bool
 	MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) (*core.Block, []*types.Receipt)
 	ExecBlock(block *core.Block) []*types.Receipt
+	Commit() error
 }
 
 func NewEngine(globaldb globaldb.GlobalDB, chaindb chaindb.ChainDB) Engine {
@@ -101,4 +102,8 @@ func (c *dummyEngine) Transfer(from core.Account, to core.Account, value *big.In
 	c.globaldb.SubBalance(from, value)
 	c.globaldb.AddBalance(to, value)
 	return nil
+}
+
+func (c *dummyEngine) Commit() error {
+	return c.globaldb.Commit()
 }

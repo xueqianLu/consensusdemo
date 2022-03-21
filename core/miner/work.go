@@ -115,6 +115,10 @@ func (m *Miner) genBlock() {
 			m.chain.SaveReceipts(receipts)
 			m.lentry.Info("worker after save receipts")
 			m.lentry.Info("mined new block ", " number ", block.Header.Number.Uint64(), " txs ", len(block.Body.Txs))
+			if len(m.packageCh) <= 1 {
+				// delay commit global.
+				m.engine.Commit()
+			}
 		}
 	}
 }

@@ -41,7 +41,7 @@ func (m *statedb) commit() error {
 		k := keyAccount(addr)
 		v := balan.Text(10)
 		m.state.Set(k, []byte(v))
-
+		m.cache.Set(key, value)
 		m.dirty.Delete(key)
 		return true
 	})
