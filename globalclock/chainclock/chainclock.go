@@ -40,12 +40,12 @@ func NewChainClock(url string, name string, reporter string) *ChainClock {
 	}
 }
 
-func (c *ChainClock) addToHistory(block *ethtypes.Block) {
-	c.history.Store(block.ParentHash(), time.Now())
+func (c *ChainClock) addToHistory(tx *ethtypes.Transaction) {
+	c.history.Store(tx.Hash().String(), time.Now())
 }
 
-func (c *ChainClock) inHistory(block *ethtypes.Block) bool {
-	_, exist := c.history.Load(block.ParentHash())
+func (c *ChainClock) inHistory(tx *ethtypes.Transaction) bool {
+	_, exist := c.history.Load(tx.Hash().String())
 	return exist
 }
 
@@ -102,12 +102,11 @@ func (c *ChainClock) Start() error {
 			if e != nil {
 				c.logger.Error("get block by number failed", "err", e)
 			} else {
-				if c.inHistory(block) {
-					continue
-				}
-				c.addToHistory(block)
 				c.logger.Debug("get new block ", "number ", header.Number)
 				for idx, tx := range block.Transactions() {
+					if c.inHistory(tx) {
+						continue
+					}
 					from, err := c.client.TransactionSender(context.Background(), tx, block.Hash(), uint(idx))
 					if err != nil {
 						c.logger.Error("get transaction sender failed", "err", err)
@@ -121,6 +120,8 @@ func (c *ChainClock) Start() error {
 						t.Time = block.Time()
 						t.Tx = tx
 						round.Txsinfo = append(round.Txsinfo, t)
+
+						c.addToHistory(tx)
 					}
 				}
 			}
