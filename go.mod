@@ -6,6 +6,7 @@ require (
 	github.com/ethereum/go-ethereum v1.10.16
 	github.com/gin-gonic/gin v1.7.7
 	github.com/gomodule/redigo v1.8.8
+	github.com/pkg/profile v1.6.0
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	gopkg.in/ini.v1 v1.66.4

@@ -19,6 +19,7 @@ func InitRouter(hand handler.ApiHandler, r *gin.Engine) {
 	v1.GET("/block", hand.GetBlock)
 	v1.POST("/initaccount", hand.InitAccount)
 	v1.POST("/memprofile", hand.MemProfile)
+	v1.POST("/debug", hand.DebugStart)
 }
 
 type APIServer struct {
