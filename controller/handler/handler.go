@@ -26,7 +26,7 @@ func (a ApiHandler) GetTransaction(c *gin.Context) {
 	hash := common.Hex2Hash(strhash)
 	tx := a.chain.GetTransaction(hash)
 	if tx == nil {
-		ResponseError(c, http.StatusBadRequest, fmt.Sprintf("tx not found"))
+		ResponseError(c, http.StatusBadRequest, TxNotFound)
 	} else {
 		info := formatTransactionInfo(tx)
 		ResponseSuccess(c, info)
@@ -38,7 +38,7 @@ func (a ApiHandler) GetReceipt(c *gin.Context) {
 	hash := common.Hex2Hash(strhash)
 	receipt := a.chain.GetReceipt(hash)
 	if receipt == nil {
-		ResponseError(c, http.StatusBadRequest, fmt.Sprintf("receipt not found"))
+		ResponseError(c, http.StatusBadRequest, ReceiptNotFound)
 	} else {
 		info := formatReceiptInfo(receipt)
 		ResponseSuccess(c, info)
@@ -104,12 +104,12 @@ func (a ApiHandler) GetBlock(c *gin.Context) {
 	fmt.Println("api handler got param", " number=", number, "changto bignumber=", ok)
 	log.Info("api handler got param", " number=", number, "changto bignumber=", ok)
 	if !ok {
-		ResponseError(c, http.StatusBadRequest, fmt.Sprintf("invalid block number"))
+		ResponseError(c, http.StatusBadRequest, InvalidBlockNumber)
 		return
 	}
 	block := a.chain.GetBlock(bignumber)
 	if block == nil {
-		ResponseError(c, http.StatusBadRequest, fmt.Sprintf("block not found"))
+		ResponseError(c, http.StatusBadRequest, BlockNotFound)
 	} else {
 		info := formatBlockInfo(block)
 		ResponseSuccess(c, info)
@@ -120,13 +120,13 @@ func (a ApiHandler) InitAccount(c *gin.Context) {
 	var param model.InitAccountParam
 	err := c.BindJSON(&param)
 	if err != nil {
-		ResponseError(c, http.StatusBadRequest, fmt.Sprintf("invalid param"))
+		ResponseError(c, http.StatusBadRequest, InvalidParam)
 		return
 	}
 	addr := common.Hex2Account(param.Addr)
 	amount, ok := new(big.Int).SetString(param.Amount, 10)
 	if !ok {
-		ResponseError(c, http.StatusBadRequest, fmt.Sprintf("invalid param"))
+		ResponseError(c, http.StatusBadRequest, InvalidParam)
 		return
 	}
 	a.global.SetBalance(addr, amount)

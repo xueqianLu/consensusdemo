@@ -1,11 +1,11 @@
 package globaldb
 
 import (
-	"fmt"
 	"github.com/hashrs/consensusdemo/core"
 	"github.com/hashrs/consensusdemo/db"
 	"github.com/hashrs/consensusdemo/db/memdb"
 	"math/big"
+	"strings"
 	"sync"
 )
 
@@ -31,7 +31,11 @@ type statedb struct {
 }
 
 func keyAccount(addr core.Account) string {
-	return fmt.Sprintf("ac-%s", addr.String())
+	var builder strings.Builder
+	builder.WriteString("ac-")
+	builder.WriteString(addr.String())
+
+	return builder.String()
 }
 
 func (m *statedb) commit() error {

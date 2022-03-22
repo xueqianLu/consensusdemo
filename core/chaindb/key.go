@@ -1,9 +1,9 @@
 package chaindb
 
 import (
-	"fmt"
 	"github.com/hashrs/consensusdemo/types"
 	"math/big"
+	"strings"
 )
 
 const (
@@ -14,17 +14,31 @@ const (
 )
 
 func chainHeightKey() string {
-	return fmt.Sprintf("%s:chain", HeightKeyPrefix)
+	return "hei-:chain"
 }
 
 func blockKey(number *big.Int) string {
-	return fmt.Sprint("%s:%s", BlockKeyPrefix, number.Text(10))
+	var builder strings.Builder
+	builder.WriteString(BlockKeyPrefix)
+	builder.WriteString(":")
+	builder.WriteString(number.Text(10))
+
+	return builder.String()
 }
 
 func transactionKey(hash types.Hash) string {
-	return fmt.Sprintf("%s:%s", TransactionKeyPrefix, hash.String())
+	var builder strings.Builder
+	builder.WriteString(TransactionKeyPrefix)
+	builder.WriteString(":")
+	builder.WriteString(hash.String())
+
+	return builder.String()
 }
 
 func receiptKey(hash types.Hash) string {
-	return fmt.Sprintf("%s:%s", ReceiptKeyPrefix, hash.String())
+	var builder strings.Builder
+	builder.WriteString(ReceiptKeyPrefix)
+	builder.WriteString(":")
+	builder.WriteString(hash.String())
+	return builder.String()
 }

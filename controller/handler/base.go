@@ -6,6 +6,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	InvalidParam       = "invalid param"
+	TxNotFound         = "tx not found"
+	ReceiptNotFound    = "receipt not found"
+	BlockNotFound      = "block not found"
+	InvalidBlockNumber = "invalid block number"
+)
+
 // Response return response
 type Response struct {
 	ErrorCode    int         `json:"error_code"`
