@@ -18,8 +18,8 @@ var (
 
 type Engine interface {
 	CheckMiner() bool
-	MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) (*core.Block, []types.Receipt)
-	ExecBlock(block *core.Block) []types.Receipt
+	MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) (*core.Block, []*types.Receipt)
+	ExecBlock(block *core.Block) []*types.Receipt
 	Commit() error
 }
 
@@ -42,7 +42,7 @@ func (c *dummyEngine) CheckMiner() bool {
 	return true
 }
 
-func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) (*core.Block, []types.Receipt) {
+func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) (*core.Block, []*types.Receipt) {
 	cur := c.chaindb.CurrentHeight()
 	last := c.chaindb.GetBlock(cur)
 	parent := types.Hash{}
@@ -66,10 +66,10 @@ func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTr
 	return block, receipts
 }
 
-func (c *dummyEngine) exec(block *core.Block) []types.Receipt {
-	var receipts = make([]types.Receipt, 0)
+func (c *dummyEngine) exec(block *core.Block) []*types.Receipt {
+	var receipts = make([]*types.Receipt, 0)
 	for _, tx := range block.Body.Txs {
-		r := types.Receipt{
+		r := &types.Receipt{
 			Txhash:      tx.Hash(),
 			From:        tx.From,
 			To:          *tx.To(),
@@ -89,7 +89,7 @@ func (c *dummyEngine) exec(block *core.Block) []types.Receipt {
 	return receipts
 }
 
-func (c *dummyEngine) ExecBlock(block *core.Block) []types.Receipt {
+func (c *dummyEngine) ExecBlock(block *core.Block) []*types.Receipt {
 	return c.exec(block)
 }
 
