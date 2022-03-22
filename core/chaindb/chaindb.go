@@ -13,7 +13,7 @@ import (
 
 type ChainDB interface {
 	CurrentHeight() *big.Int
-	SaveReceipts(r []*types.Receipt)
+	SaveReceipts(r []types.Receipt)
 	SaveTransactions(tx []*types.FurtherTransaction)
 	GetBlock(*big.Int) *core.Block
 	GetTransaction(hash types.Hash) *types.FurtherTransaction
@@ -27,7 +27,7 @@ func NewChainDB(database db.Database) ChainDB {
 		cache:          memdb.NewMemDB(),
 		tosaveBlock:    make(chan *core.Block, 1000000),
 		tosaveTxs:      make(chan []*types.FurtherTransaction, 1000000),
-		tosaveReceipts: make(chan []*types.Receipt, 1000000),
+		tosaveReceipts: make(chan []types.Receipt, 1000000),
 	}
 }
 
@@ -35,7 +35,7 @@ type memChaindb struct {
 	cache          db.CacheKV
 	database       db.Database
 	height         atomic.Value
-	tosaveReceipts chan []*types.Receipt
+	tosaveReceipts chan []types.Receipt
 	tosaveTxs      chan []*types.FurtherTransaction
 	tosaveBlock    chan *core.Block
 }
@@ -103,7 +103,7 @@ func (m *memChaindb) storeTask() {
 	}()
 }
 
-func (m *memChaindb) toStoreReceipts(receipts []*types.Receipt) {
+func (m *memChaindb) toStoreReceipts(receipts []types.Receipt) {
 	m.tosaveReceipts <- receipts
 }
 
@@ -162,7 +162,7 @@ func (m *memChaindb) SaveTransactions(txs []*types.FurtherTransaction) {
 	m.toStoreTransactions(txs)
 }
 
-func (m *memChaindb) SaveReceipts(rs []*types.Receipt) {
+func (m *memChaindb) SaveReceipts(rs []types.Receipt) {
 	for _, r := range rs {
 		k := receiptKey(r.Txhash)
 		m.cache.Set(k, r)
