@@ -119,6 +119,7 @@ func (m *Miner) genBlock() {
 				// delay commit global.
 				m.engine.Commit()
 			}
+			prepared.packedtxs = nil
 		}
 	}
 }

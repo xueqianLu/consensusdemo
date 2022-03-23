@@ -58,9 +58,10 @@ func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTr
 	block := &core.Block{
 		Header: *header,
 		Body: core.BlockBody{
-			Txs: txs,
+			Txs: make([]*types.FurtherTransaction, len(txs)),
 		},
 	}
+	copy(block.Body.Txs, txs)
 	receipts := c.exec(block)
 	block.Header.ReceiptRoot = types.Hash{} //lib.HashSlices(types.Receipts(receipts))
 	block.Header.TxRoot = types.Hash{}      //lib.HashSlices(types.FurtherTransactions(txs))
