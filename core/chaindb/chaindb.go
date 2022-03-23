@@ -23,13 +23,15 @@ type ChainDB interface {
 }
 
 func NewChainDB(database db.Database) ChainDB {
-	return &memChaindb{
+	chain := &memChaindb{
 		database:       database,
 		cache:          memdb.NewMemDB(),
 		tosaveBlock:    make(chan *core.Block, 1000000),
 		tosaveTxs:      make(chan []*types.FurtherTransaction, 1000000),
 		tosaveReceipts: make(chan []*types.Receipt, 1000000),
 	}
+	chain.storeTask()
+	return chain
 }
 
 type memChaindb struct {
