@@ -3,6 +3,7 @@ package chaindb
 import (
 	"encoding/json"
 	"github.com/hashrs/consensusdemo/core"
+	"github.com/hashrs/consensusdemo/core/objectpool"
 	"github.com/hashrs/consensusdemo/db"
 	"github.com/hashrs/consensusdemo/db/memdb"
 	"github.com/hashrs/consensusdemo/types"
@@ -61,7 +62,10 @@ func (m *memChaindb) storeTask() {
 						continue
 					}
 					m.database.Set(k, d)
-					m.cache.Del(k)
+					if pr, exist := m.cache.Get(k); exist {
+						objectpool.PutReceiptObject(pr.(*types.Receipt))
+						m.cache.Del(k)
+					}
 				}
 			}
 		}
@@ -79,7 +83,10 @@ func (m *memChaindb) storeTask() {
 						continue
 					}
 					m.database.Set(k, d)
-					m.cache.Del(k)
+					if pr, exist := m.cache.Get(k); exist {
+						objectpool.PutTransactionObject(pr.(*types.FurtherTransaction))
+						m.cache.Del(k)
+					}
 				}
 			}
 

@@ -89,10 +89,10 @@ func formatBlockInfo(block *core.Block) map[string]interface{} {
 	info["parent"] = block.Header.Parent.String()
 	info["txroot"] = block.Header.TxRoot.String()
 	info["receiptroot"] = block.Header.ReceiptRoot.String()
-	txs := make([]string, 0)
-	for _, t := range block.Body.Txs {
-		hash := t.Hash()
-		txs = append(txs, hash.String())
+	txs := make([]string, len(block.Body.Txs))
+	for i := 0; i < len(txs); i++ {
+		t := block.Body.Txs[i]
+		txs[i] = t.Hash().String()
 	}
 	info["txs"] = txs
 	return info

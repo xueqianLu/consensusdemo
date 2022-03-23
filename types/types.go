@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/hashrs/consensusdemo/core/objectpool"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/sha3"
 	"math/big"
@@ -49,17 +50,17 @@ func (t *TxPair) GetHash() string {
 }
 
 func (t *TxPair) GetTransactions() []*FurtherTransaction {
-	var txs = make([]*FurtherTransaction, 0)
-	for _, tx := range t.Txs {
-		t := FurtherTransaction{}
-		err := t.UnmarshalBinary([]byte(tx.TxBytes))
+	var txs = make([]*FurtherTransaction, len(t.Txs))
+	for i := 0; i < len(txs); i++ {
+		tx := t.Txs[i]
+		ptx := objectpool.GetTransactionObject()
+		err := ptx.UnmarshalBinary(tx.TxBytes)
 		if err != nil {
 			log.Error("decode rlp tx ", "err", err)
 			continue
 		}
-		t.From.SetBytes(tx.From)
-		txs = append(txs, &t)
-		//log.Info("got transaction with ", "from", t.From, "tx ", t.Transaction)
+		ptx.From.SetBytes(tx.From)
+		txs[i] = ptx
 	}
 	return txs
 }

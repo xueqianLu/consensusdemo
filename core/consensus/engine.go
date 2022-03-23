@@ -4,6 +4,8 @@ import (
 	"github.com/hashrs/consensusdemo/core"
 	"github.com/hashrs/consensusdemo/core/chaindb"
 	"github.com/hashrs/consensusdemo/core/globaldb"
+	"github.com/hashrs/consensusdemo/core/objectpool"
+
 	//"github.com/hashrs/consensusdemo/lib"
 	"github.com/hashrs/consensusdemo/types"
 	log "github.com/sirupsen/logrus"
@@ -67,24 +69,24 @@ func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTr
 }
 
 func (c *dummyEngine) exec(block *core.Block) []*types.Receipt {
-	var receipts = make([]*types.Receipt, 0)
-	for _, tx := range block.Body.Txs {
-		r := &types.Receipt{
-			Txhash:      tx.Hash(),
-			From:        tx.From,
-			To:          *tx.To(),
-			PackedTime:  int64(block.Header.Timestamp),
-			ExecTime:    time.Now().Unix(),
-			Value:       new(big.Int).Set(tx.Value()),
-			BlockNumber: new(big.Int).Set(block.Header.Number),
-		}
+	var receipts = make([]*types.Receipt, len(block.Body.Txs))
+	for i := 0; i < len(block.Body.Txs); i++ {
+		tx := block.Body.Txs[i]
+		pr := objectpool.GetReceiptObject()
+		pr.Txhash = tx.Hash()
+		pr.From = tx.From
+		pr.To = *tx.To()
+		pr.PackedTime = int64(block.Header.Timestamp)
+		pr.ExecTime = time.Now().Unix()
+		pr.Value = new(big.Int).Set(tx.Value())
+		pr.BlockNumber = new(big.Int).Set(block.Header.Number)
 		if c.CanTransfer(core.Account{tx.From}, core.Account{*tx.To()}, tx.Value()) {
 			c.Transfer(core.Account{tx.From}, core.Account{*tx.To()}, tx.Value())
-			r.Status = 1
+			pr.Status = 1
 		} else {
-			r.Status = 0
+			pr.Status = 0
 		}
-		receipts = append(receipts, r)
+		receipts[i] = pr
 	}
 	return receipts
 }
