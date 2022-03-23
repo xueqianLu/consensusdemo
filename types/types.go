@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/hashrs/consensusdemo/core/objectpool"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/sha3"
 	"math/big"
 )
@@ -47,22 +45,6 @@ type TxPair struct {
 
 func (t *TxPair) GetHash() string {
 	return hex.EncodeToString(t.Hash)
-}
-
-func (t *TxPair) GetTransactions() []*FurtherTransaction {
-	var txs = make([]*FurtherTransaction, len(t.Txs))
-	for i := 0; i < len(txs); i++ {
-		tx := t.Txs[i]
-		ptx := objectpool.GetTransactionObject()
-		err := ptx.UnmarshalBinary(tx.TxBytes)
-		if err != nil {
-			log.Error("decode rlp tx ", "err", err)
-			continue
-		}
-		ptx.From.SetBytes(tx.From)
-		txs[i] = ptx
-	}
-	return txs
 }
 
 type RoundInfo struct {

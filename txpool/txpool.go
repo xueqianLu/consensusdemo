@@ -3,6 +3,7 @@ package txpool
 import (
 	"encoding/json"
 	"github.com/hashrs/consensusdemo/config"
+	"github.com/hashrs/consensusdemo/core/objectpool"
 	"github.com/hashrs/consensusdemo/lib/redispool"
 	"github.com/hashrs/consensusdemo/types"
 	log "github.com/sirupsen/logrus"
@@ -105,7 +106,7 @@ func (t *TxPool) loop(idx uint) {
 					var pair types.TxPair
 					if err := json.Unmarshal([]byte(tx), &pair); err == nil {
 						//l.Debug("save redis tx to map")
-						txs := pair.GetTransactions()
+						txs := GetTransactions(pair)
 						t.allTx.Store(pair.GetHash(), txs)
 						l.Debug("got tx from redis, ", " hash ", pair.GetHash())
 					} else {
@@ -118,4 +119,20 @@ func (t *TxPool) loop(idx uint) {
 		}
 	}()
 	wg.Wait()
+}
+
+func GetTransactions(t types.TxPair) []*types.FurtherTransaction {
+	var txs = make([]*types.FurtherTransaction, len(t.Txs))
+	for i := 0; i < len(txs); i++ {
+		tx := t.Txs[i]
+		ptx := objectpool.GetTransactionObject()
+		err := ptx.UnmarshalBinary(tx.TxBytes)
+		if err != nil {
+			log.Error("decode rlp tx ", "err", err)
+			continue
+		}
+		ptx.From.SetBytes(tx.From)
+		txs[i] = ptx
+	}
+	return txs
 }
