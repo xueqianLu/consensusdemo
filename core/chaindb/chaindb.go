@@ -27,8 +27,8 @@ func NewChainDB(database db.Database) ChainDB {
 		database:       database,
 		cache:          memdb.NewMemDB(),
 		tosaveBlock:    make(chan *core.Block, 1000000),
-		tosaveTxs:      make(chan []*types.FurtherTransaction, 1000000),
-		tosaveReceipts: make(chan []*types.Receipt, 1000000),
+		tosaveTxs:      make(chan types.FurtherTransactions, 1000000),
+		tosaveReceipts: make(chan types.Receipts, 1000000),
 	}
 	chain.storeTask()
 	return chain
@@ -38,8 +38,8 @@ type memChaindb struct {
 	cache          db.CacheKV
 	database       db.Database
 	height         atomic.Value
-	tosaveReceipts chan []*types.Receipt
-	tosaveTxs      chan []*types.FurtherTransaction
+	tosaveReceipts chan types.Receipts
+	tosaveTxs      chan types.FurtherTransactions
 	tosaveBlock    chan *core.Block
 }
 
