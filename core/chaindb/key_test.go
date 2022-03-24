@@ -16,11 +16,3 @@ func benchmark(b *testing.B, f func(hash types.Hash) string) {
 func BenchmarkMemChaindb_TransactionKey1(b *testing.B) {
 	benchmark(b, transactionKey)
 }
-
-func BenchmarkMemChaindb_TransactionKey2(b *testing.B) {
-	benchmark(b, transactionKey2)
-}
-
-func BenchmarkMemChaindb_TransactionKey3(b *testing.B) {
-	benchmark(b, transactionKey3)
-}
