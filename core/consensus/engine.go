@@ -46,7 +46,10 @@ func (c *dummyEngine) CheckMiner() bool {
 
 func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) (*core.Block, []*types.Receipt) {
 	cur := c.chaindb.CurrentHeight()
+	t1 := time.Now()
 	last := c.chaindb.GetBlock(cur)
+	t2 := time.Now()
+	log.Info("worker make block get block", "cost ", t2.Sub(t1).Milliseconds())
 	parent := types.Hash{}
 
 	if last != nil {
@@ -62,7 +65,11 @@ func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTr
 		},
 	}
 	copy(block.Body.Txs, txs)
+	t3 := time.Now()
+	log.Info("worker make block make header", "cost ", t3.Sub(t2).Milliseconds())
 	receipts := c.exec(block)
+	t4 := time.Now()
+	log.Info("worker make block exec tx", "cost ", t4.Sub(t3).Milliseconds())
 	block.Header.ReceiptRoot = types.Hash{} //lib.HashSlices(types.Receipts(receipts))
 	block.Header.TxRoot = types.Hash{}      //lib.HashSlices(types.FurtherTransactions(txs))
 

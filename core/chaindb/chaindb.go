@@ -60,9 +60,10 @@ func (m *memChaindb) storeTask() {
 					k := receiptKey(r.Txhash)
 					d, e := r.Encode()
 					if e != nil {
-						log.Trace("receipt encode error failed to store", "txhash ", r.Hash())
+						log.Trace("receipt encode error failed to store", "txhash ", r.Txhash)
 						continue
 					}
+					//log.Debug("save receipt to database", "hash ", k)
 					m.database.Set(k, d)
 					if pr, exist := m.cache.Get(k); exist {
 						objectpool.PutReceiptObject(pr.(*types.Receipt))
@@ -113,15 +114,21 @@ func (m *memChaindb) storeTask() {
 }
 
 func (m *memChaindb) toStoreReceipts(receipts []*types.Receipt) {
+	log.Debug("before send to saveReceipts")
 	m.tosaveReceipts <- receipts
+	log.Debug("after send to saveReceipts")
 }
 
 func (m *memChaindb) toStoreTransactions(txs []*types.FurtherTransaction) {
+	log.Debug("before send to saveTxs")
 	m.tosaveTxs <- txs
+	log.Debug("after send to saveTxs")
 }
 
 func (m *memChaindb) toStoreBlocks(block *core.Block) {
+	log.Debug("before send to saveBlock")
 	m.tosaveBlock <- block
+	log.Debug("after send to saveBlock")
 }
 
 func (m *memChaindb) CurrentHeight() *big.Int {
@@ -164,15 +171,21 @@ func (m *memChaindb) SaveBlock(block *core.Block) error {
 }
 
 func (m *memChaindb) SaveTransactions(txs []*types.FurtherTransaction) {
-	for _, tx := range txs {
+	log.Debug("in save transactions ", " txs number ", len(txs))
+	for i:=0; i < len(txs); i++ {
+		tx := txs[i]
 		k := transactionKey(tx.Hash())
+		log.Debug("before set tx to cache ", " i ", i)
 		m.cache.Set(k, tx)
+		log.Debug("after set tx to cache ", " i ", i)
 	}
 	m.toStoreTransactions(txs)
 }
 
 func (m *memChaindb) SaveReceipts(rs []*types.Receipt) {
-	for _, r := range rs {
+	log.Debug("in save receipts ", " txs number ", len(rs))
+	for i:=0; i < len(rs); i++ {
+		r := rs[i]
 		k := receiptKey(r.Txhash)
 		m.cache.Set(k, r)
 	}
@@ -200,12 +213,15 @@ func (m *memChaindb) GetTransaction(hash types.Hash) *types.FurtherTransaction {
 func (m *memChaindb) GetReceipt(txhash types.Hash) *types.Receipt {
 	k := receiptKey(txhash)
 	if r, exist := m.cache.Get(k); exist {
+		//log.Debug("get receipt in cache", "txhash", txhash.String())
 		return r.(*types.Receipt)
 	} else {
 		d, exist := m.database.Get(k)
 		if !exist {
+			//log.Debug("get receipt from database failed", "txhash", txhash.String())
 			return nil
 		}
+		//log.Debug("get receipt from database succeed", "txhash", txhash.String())
 		var r types.Receipt
 		if err := json.Unmarshal(d, &r); err != nil {
 			return nil
