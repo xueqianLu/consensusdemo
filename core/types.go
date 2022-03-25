@@ -9,8 +9,8 @@ import (
 )
 
 type Block struct {
-	Header BlockHeader
-	Body   BlockBody
+	Header *BlockHeader
+	Body   *BlockBody
 }
 
 func (b *Block) Hash() types.Hash {
@@ -40,8 +40,13 @@ func (body *BlockBody) Bytes() []byte {
 	return b
 }
 
+func (body *BlockBody) Encode() ([]byte, error) {
+	return json.Marshal(body)
+}
+
 type BlockHeader struct {
 	Parent      types.Hash `json:"parent"`
+	BlockHash   types.Hash `json:"hash"`
 	Number      *big.Int   `json:"number"`
 	Timestamp   uint64     `json:"time"`
 	ReceiptRoot types.Hash `json:"receipt"`
@@ -57,6 +62,10 @@ func (h *BlockHeader) Bytes() []byte {
 	b = append(b, h.TxRoot.Bytes()...)
 
 	return b
+}
+
+func (h *BlockHeader) Encode() ([]byte, error) {
+	return json.Marshal(h)
 }
 
 type Account struct {

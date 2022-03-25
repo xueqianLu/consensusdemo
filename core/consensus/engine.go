@@ -47,24 +47,27 @@ func (c *dummyEngine) CheckMiner() bool {
 func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTransaction) (*core.Block, []*types.Receipt) {
 	cur := c.chaindb.CurrentHeight()
 	t1 := time.Now()
-	last := c.chaindb.GetBlock(cur)
+	last := c.chaindb.GetBlockHeader(cur)
 	t2 := time.Now()
 	log.Info("worker make block get block", "cost ", t2.Sub(t1).Milliseconds())
 	parent := types.Hash{}
 
 	if last != nil {
-		parent = last.Hash()
+		parent = last.BlockHash
 	}
+
 	header.Number = new(big.Int).Add(cur, big1)
 	header.Parent = parent
 
 	block := &core.Block{
-		Header: *header,
-		Body: core.BlockBody{
+		Header: header,
+		Body: &core.BlockBody{
 			Txs: make([]*types.FurtherTransaction, len(txs)),
 		},
 	}
 	copy(block.Body.Txs, txs)
+	block.Header.BlockHash = block.Hash()
+
 	t3 := time.Now()
 	log.Info("worker make block make header", "cost ", t3.Sub(t2).Milliseconds())
 	receipts := c.exec(block)
@@ -84,6 +87,7 @@ func (c *dummyEngine) exec(block *core.Block) []*types.Receipt {
 		pr.Txhash = tx.Hash()
 		pr.From = tx.From
 		pr.To = *tx.To()
+		pr.Index = int64(i)
 		pr.PackedTime = int64(block.Header.Timestamp)
 		pr.ExecTime = time.Now().Unix()
 		pr.Value = new(big.Int).Set(tx.Value())

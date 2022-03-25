@@ -84,6 +84,7 @@ type Receipt struct {
 	Txhash      Hash           `json:"hash"`
 	From        common.Address `json:"from"`
 	To          common.Address `json:"to"`
+	Index       int64          `json:"index"`
 	Value       *big.Int       `json:"value"`
 	BlockNumber *big.Int       `json:"block"`
 	PackedTime  int64          `json:"packtime"`

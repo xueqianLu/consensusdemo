@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"math/big"
 	"sync/atomic"
+	"time"
 )
 
 type ChainDB interface {
@@ -17,10 +18,16 @@ type ChainDB interface {
 	SaveReceipts(r []*types.Receipt)
 	SaveTransactions(tx []*types.FurtherTransaction)
 	GetBlock(*big.Int) *core.Block
+	GetBlockHeader(*big.Int) *core.BlockHeader
 	GetTransaction(hash types.Hash) *types.FurtherTransaction
 	GetReceipt(hash types.Hash) *types.Receipt
 	SaveBlock(*core.Block) error
 }
+
+var (
+	big10 = big.NewInt(10)
+	big1  = big.NewInt(1)
+)
 
 func NewChainDB(database db.Database) ChainDB {
 	chain := &memChaindb{
@@ -41,9 +48,13 @@ type memChaindb struct {
 	tosaveReceipts chan types.Receipts
 	tosaveTxs      chan types.FurtherTransactions
 	tosaveBlock    chan *core.Block
+	startHeight    *big.Int
 }
 
 func (m *memChaindb) saveHeight(n *big.Int) {
+	if m.startHeight == nil {
+		m.startHeight = new(big.Int).Set(n)
+	}
 	hstr := n.Text(10)
 	k := chainHeightKey()
 	m.database.Set(k, []byte(hstr))     // db save string
@@ -92,22 +103,46 @@ func (m *memChaindb) storeTask() {
 					}
 				}
 			}
-
 		}
 	}()
 
 	go func() {
+		duration := time.Second * 10
+		tm := time.NewTicker(duration)
+		defer tm.Stop()
+
 		for {
 			select {
 			case block := <-m.tosaveBlock:
-				k := blockKey(block.Header.Number)
-				d, e := block.Encode()
-				if e != nil {
-					log.Trace("block encode error failed to store", "number ", block.Header.Number)
-					continue
+				{
+					hk := blockHeaderKey(block.Header.Number)
+					dh, e := block.Header.Encode()
+					if e != nil {
+						log.Trace("block header encode error failed to store", "number ", block.Header.Number)
+						continue
+					}
+					m.database.Set(hk, dh)
 				}
-				m.database.Set(k, d)
-				m.cache.Del(k)
+				{
+					bodyk := blockBodyKey(block.Header.Number)
+					dbody, e := block.Body.Encode()
+					if e != nil {
+						log.Trace("block body encode error failed to store", "number ", block.Header.Number)
+						continue
+					}
+					m.database.Set(bodyk, dbody)
+					m.cache.Del(bodyk)
+				}
+			case <-tm.C:
+				if m.startHeight != nil {
+					h := m.CurrentHeight()
+					for h.Cmp(m.startHeight.Add(m.startHeight, big10)) > 0 {
+						hk := blockHeaderKey(m.startHeight)
+						m.cache.Del(hk)
+						m.startHeight = new(big.Int).Add(m.startHeight, big1)
+					}
+				}
+				tm.Reset(duration)
 			}
 		}
 	}()
@@ -146,25 +181,66 @@ func (m *memChaindb) CurrentHeight() *big.Int {
 }
 
 func (m *memChaindb) GetBlock(num *big.Int) *core.Block {
-	k := blockKey(num)
-	if block, exist := m.cache.Get(k); exist {
-		return block.(*core.Block)
+	h := m.GetBlockHeader(num)
+	if h == nil {
+		return nil
+	}
+	b := m.GetBlockBody(num)
+	if b == nil {
+		return nil
+	}
+	return &core.Block{Header: h, Body: b}
+}
+
+func (m *memChaindb) GetBlockBody(num *big.Int) *core.BlockBody {
+	k := blockBodyKey(num)
+	if body, exist := m.cache.Get(k); exist {
+		return body.(*core.BlockBody)
 	} else {
 		d, exist := m.database.Get(k)
 		if !exist {
 			return nil
 		}
-		var block core.Block
-		if err := json.Unmarshal(d, &block); err != nil {
+		var body core.BlockBody
+		if err := json.Unmarshal(d, &body); err != nil {
 			return nil
 		}
-		return &block
+		return &body
 	}
 }
 
+func (m *memChaindb) GetBlockHeader(num *big.Int) *core.BlockHeader {
+	k := blockHeaderKey(num)
+	if header, exist := m.cache.Get(k); exist {
+		return header.(*core.BlockHeader)
+	} else {
+		d, exist := m.database.Get(k)
+		if !exist {
+			return nil
+		}
+		var header core.BlockHeader
+		if err := json.Unmarshal(d, &header); err != nil {
+			return nil
+		}
+		return &header
+	}
+}
+
+func (m *memChaindb) cacheBlockHeader(block *core.Block) error {
+	k := blockHeaderKey(block.Header.Number)
+	m.cache.Set(k, block.Header)
+	return nil
+}
+
+func (m *memChaindb) cacheBlockBody(block *core.Block) error {
+	k := blockBodyKey(block.Header.Number)
+	m.cache.Set(k, block.Body)
+	return nil
+}
+
 func (m *memChaindb) SaveBlock(block *core.Block) error {
-	k := blockKey(block.Header.Number)
-	m.cache.Set(k, block)
+	m.cacheBlockHeader(block)
+	m.cacheBlockBody(block)
 	m.toStoreBlocks(block)
 	m.saveHeight(block.Header.Number)
 	return nil
@@ -172,7 +248,7 @@ func (m *memChaindb) SaveBlock(block *core.Block) error {
 
 func (m *memChaindb) SaveTransactions(txs []*types.FurtherTransaction) {
 	log.Debug("in save transactions ", " txs number ", len(txs))
-	for i:=0; i < len(txs); i++ {
+	for i := 0; i < len(txs); i++ {
 		tx := txs[i]
 		k := transactionKey(tx.Hash())
 		log.Debug("before set tx to cache ", " i ", i)
@@ -184,7 +260,7 @@ func (m *memChaindb) SaveTransactions(txs []*types.FurtherTransaction) {
 
 func (m *memChaindb) SaveReceipts(rs []*types.Receipt) {
 	log.Debug("in save receipts ", " txs number ", len(rs))
-	for i:=0; i < len(rs); i++ {
+	for i := 0; i < len(rs); i++ {
 		r := rs[i]
 		k := receiptKey(r.Txhash)
 		m.cache.Set(k, r)
