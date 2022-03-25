@@ -3,12 +3,18 @@ package storagedb
 import (
 	"errors"
 	"github.com/hashrs/consensusdemo/config"
+	"github.com/hashrs/consensusdemo/db"
 	"github.com/hashrs/consensusdemo/lib/redispool"
 	"log"
 )
 
 type redisdb struct {
 	db *redispool.RedisPool
+}
+
+func (s *redisdb) NewBatch() db.Batch {
+	// not support now.
+	return nil
 }
 
 func (s *redisdb) Get(key interface{}) ([]byte, bool) {

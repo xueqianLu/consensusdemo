@@ -51,6 +51,13 @@ func (c *Config) StorageConn() (conn string, dbNum string, passwd string) {
 	return
 }
 
+func (c *Config) LevelDBConf() (file string, cache int, handles int) {
+	file = c.cfg.Section("leveldb").Key("file").String()
+	cache, _ = c.cfg.Section("leveldb").Key("cache").Int()
+	handles, _ = c.cfg.Section("leveldb").Key("handle").Int()
+	return
+}
+
 func (c *Config) Chains() map[string]string {
 	keys := c.cfg.Section("chain").Keys()
 	var chain = make(map[string]string)

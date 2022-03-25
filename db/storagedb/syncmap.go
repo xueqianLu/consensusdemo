@@ -2,11 +2,17 @@ package storagedb
 
 import (
 	"github.com/hashrs/consensusdemo/config"
+	"github.com/hashrs/consensusdemo/db"
 	"sync"
 )
 
 type syncmapdb struct {
 	db sync.Map
+}
+
+func (s *syncmapdb) NewBatch() db.Batch {
+	// not support now.
+	return nil
 }
 
 func (s *syncmapdb) Get(key interface{}) ([]byte, bool) {

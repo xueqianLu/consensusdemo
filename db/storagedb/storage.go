@@ -6,6 +6,7 @@ import (
 )
 
 func NewStorageDB(conf *config.Config) db.Database {
+	return newLevelDB(conf)
 	return newRedisDB(conf)
-	//return newSyncMapDB(conf)
+	return newSyncMapDB(conf)
 }
