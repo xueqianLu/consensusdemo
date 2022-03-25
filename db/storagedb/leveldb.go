@@ -47,8 +47,8 @@ type LevelDB struct {
 }
 
 func newLevelDB(conf *config.Config) *LevelDB {
-	file,cache, handles := conf.LevelDBConf()
-	db,err := New(file, cache, handles)
+	file, cache, handles := conf.LevelDBConf()
+	db, err := New(file, cache, handles)
 	if err != nil {
 		log.Error(" new level db failed ", " error ", err)
 		return nil
@@ -139,12 +139,14 @@ func (db *LevelDB) Close() error {
 
 // Has retrieves if a key is present in the key-value store.
 func (db *LevelDB) Has(key interface{}) (bool, error) {
-	return db.db.Has(key.([]byte), nil)
+	k := []byte(key.(string))
+	return db.db.Has(k, nil)
 }
 
 // Get retrieves the given key if it's present in the key-value store.
 func (db *LevelDB) Get(key interface{}) ([]byte, bool) {
-	dat, err := db.db.Get(key.([]byte), nil)
+	k := []byte(key.(string))
+	dat, err := db.db.Get(k, nil)
 	if err != nil {
 		return nil, false
 	}
@@ -153,12 +155,14 @@ func (db *LevelDB) Get(key interface{}) ([]byte, bool) {
 
 // Put inserts the given value into the key-value store.
 func (db *LevelDB) Set(key interface{}, value []byte) error {
-	return db.db.Put(key.([]byte), value, nil)
+	k := []byte(key.(string))
+	return db.db.Put(k, value, nil)
 }
 
 // Delete removes the key from the key-value store.
 func (db *LevelDB) Del(key interface{}) error {
-	return db.db.Delete(key.([]byte), nil)
+	k := []byte(key.(string))
+	return db.db.Delete(k, nil)
 }
 
 // NewBatch creates a write-only key-value store that buffers changes to its host
@@ -179,16 +183,18 @@ type batch struct {
 }
 
 // Put inserts the given value into the batch for later committing.
-func (b *batch) Set(key, value []byte) error {
-	b.b.Put(key, value)
-	b.size += len(key) + len(value)
+func (b *batch) Set(key interface{}, value []byte) error {
+	k := []byte(key.(string))
+	b.b.Put(k, value)
+	b.size += len(k) + len(value)
 	return nil
 }
 
 // Delete inserts the a key removal into the batch for later committing.
-func (b *batch) Delete(key []byte) error {
-	b.b.Delete(key)
-	b.size += len(key)
+func (b *batch) Delete(key interface{}) error {
+	k := []byte(key.(string))
+	b.b.Delete(k)
+	b.size += len(k)
 	return nil
 }
 

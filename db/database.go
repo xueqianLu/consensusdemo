@@ -20,10 +20,10 @@ type CacheKV interface {
 // KeyValueWriter wraps the Put method of a backing data store.
 type KeyValueWriter interface {
 	// Put inserts the given value into the key-value data store.
-	Set(key []byte, value []byte) error
+	Set(key interface{}, value []byte) error
 
 	// Delete removes the key from the key-value data store.
-	Delete(key []byte) error
+	Delete(key interface{}) error
 }
 
 // Batch is a write-only database that commits changes to its host database
