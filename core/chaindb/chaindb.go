@@ -149,21 +149,15 @@ func (m *memChaindb) storeTask() {
 }
 
 func (m *memChaindb) toStoreReceipts(receipts []*types.Receipt) {
-	log.Debug("before send to saveReceipts")
 	m.tosaveReceipts <- receipts
-	log.Debug("after send to saveReceipts")
 }
 
 func (m *memChaindb) toStoreTransactions(txs []*types.FurtherTransaction) {
-	log.Debug("before send to saveTxs")
 	m.tosaveTxs <- txs
-	log.Debug("after send to saveTxs")
 }
 
 func (m *memChaindb) toStoreBlocks(block *core.Block) {
-	log.Debug("before send to saveBlock")
 	m.tosaveBlock <- block
-	log.Debug("after send to saveBlock")
 }
 
 func (m *memChaindb) CurrentHeight() *big.Int {
@@ -248,12 +242,10 @@ func (m *memChaindb) SaveBlock(block *core.Block) error {
 
 func (m *memChaindb) SaveTransactions(txs []*types.FurtherTransaction) {
 	log.Debug("in save transactions ", " txs number ", len(txs))
-	for i := 0; i < len(txs); i++ {
-		tx := txs[i]
-		k := transactionKey(tx.Hash())
-		log.Debug("before set tx to cache ", " i ", i)
-		m.cache.Set(k, tx)
-		log.Debug("after set tx to cache ", " i ", i)
+	length := len(txs)
+	for i := 0; i < length; i++ {
+		k := transactionKey(txs[i].Hash())
+		m.cache.Set(k, txs[i])
 	}
 	m.toStoreTransactions(txs)
 }

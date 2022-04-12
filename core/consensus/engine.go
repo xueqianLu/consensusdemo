@@ -62,10 +62,9 @@ func (c *dummyEngine) MakeBlock(header *core.BlockHeader, txs []*types.FurtherTr
 	block := &core.Block{
 		Header: header,
 		Body: &core.BlockBody{
-			Txs: make([]*types.FurtherTransaction, len(txs)),
+			Txs: txs,
 		},
 	}
-	copy(block.Body.Txs, txs)
 	block.Header.BlockHash = block.Hash()
 
 	t3 := time.Now()
