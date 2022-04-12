@@ -63,7 +63,7 @@ type FurtherTransaction struct {
 }
 
 func (t FurtherTransaction) Hash() Hash {
-	if t.nhash != nil {
+	if t.nhash == nil {
 		h := t.Transaction.Hash()
 		t.nhash = &Hash{h}
 	}
