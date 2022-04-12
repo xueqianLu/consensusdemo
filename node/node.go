@@ -25,10 +25,10 @@ func NewNode(conf *config.Config) *Node {
 		conf: conf,
 	}
 	chainDB := storagedb.NewStorageDB(conf)
-	stateDB := storagedb.NewStorageDB(conf)
+	//stateDB := storagedb.NewStorageDB(conf)
 
 	node.chain = chaindb.NewChainDB(chainDB)
-	node.global = globaldb.NewGlobalDB(stateDB)
+	node.global = globaldb.NewGlobalDB(chainDB)
 
 	node.server = controller.NewServer(node.chain, node.global)
 	node.txp = txpool.NewTxpool(conf)

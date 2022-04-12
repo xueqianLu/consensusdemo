@@ -3,7 +3,6 @@ package txpool
 import (
 	"encoding/json"
 	"github.com/hashrs/consensusdemo/config"
-	"github.com/hashrs/consensusdemo/core/objectpool"
 	"github.com/hashrs/consensusdemo/lib/redispool"
 	"github.com/hashrs/consensusdemo/types"
 	log "github.com/sirupsen/logrus"
@@ -125,13 +124,14 @@ func GetTransactions(t types.TxPair) []*types.FurtherTransaction {
 	var txs = make([]*types.FurtherTransaction, len(t.Txs))
 	for i := 0; i < len(txs); i++ {
 		tx := t.Txs[i]
-		ptx := objectpool.GetTransactionObject()
+		ptx := new(types.FurtherTransaction)
 		err := ptx.UnmarshalBinary(tx.TxBytes)
 		if err != nil {
 			log.Error("decode rlp tx ", "err", err)
 			continue
 		}
 		ptx.From.SetBytes(tx.From)
+		ptx.Hash()
 		txs[i] = ptx
 	}
 	return txs

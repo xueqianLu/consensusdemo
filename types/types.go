@@ -58,12 +58,16 @@ type Hash struct {
 
 type FurtherTransaction struct {
 	types.Transaction
-	From common.Address
+	From  common.Address
+	nhash *Hash `json:"-"`
 }
 
 func (t FurtherTransaction) Hash() Hash {
-	h := t.Transaction.Hash()
-	return Hash{h}
+	if t.nhash != nil {
+		h := t.Transaction.Hash()
+		t.nhash = &Hash{h}
+	}
+	return *t.nhash
 }
 
 func (t *FurtherTransaction) Encode() ([]byte, error) {
