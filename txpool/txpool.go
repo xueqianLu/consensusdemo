@@ -99,11 +99,11 @@ func (t *TxPool) loop(idx uint) {
 		l := log.WithField("routine", "store").WithField("index", idx)
 		for {
 			select {
-			case tx := <-newtx:
+			case atx := <-newtx:
 				go func(cachetx string) {
 					// get tx pair from redis and save to map.
 					var pair types.TxPair
-					if err := json.Unmarshal([]byte(tx), &pair); err == nil {
+					if err := json.Unmarshal([]byte(cachetx), &pair); err == nil {
 						//l.Debug("save redis tx to map")
 						txs := GetTransactions(pair)
 						t.allTx.Store(pair.GetHash(), txs)
@@ -111,7 +111,7 @@ func (t *TxPool) loop(idx uint) {
 					} else {
 						l.Error("unmarshal tx pair failed", "err", err)
 					}
-				}(tx)
+				}(atx)
 			case <-t.closed:
 				return
 			}
