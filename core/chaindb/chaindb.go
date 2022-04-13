@@ -62,119 +62,124 @@ func (m *memChaindb) saveHeight(n *big.Int) {
 	m.height.Store(new(big.Int).Set(n)) // cache save *big.Int
 }
 
+func (m *memChaindb) txsaveTask() {
+	for {
+		select {
+		case txs := <-m.tosaveTxs:
+			log.Debug("save txs task running", " len txs ", len(txs), " remain in channel ", len(m.tosaveTxs))
+			batch := m.database.NewBatch()
+			delk := make([]string, 0, len(txs))
+			for _, tx := range txs {
+				k := transactionKey(tx.Hash())
+				d, e := tx.Encode()
+				if e != nil {
+					log.Trace("transaction encode error failed to store", "txhash ", tx.Hash())
+					continue
+				}
+				cd, err := utils.GzipEncode(d)
+				if err != nil {
+					log.Error("save transaction to database", "gzip err ", err)
+					continue
+				}
+
+				batch.Set(k, cd)
+				delk = append(delk, k)
+			}
+			batch.Write()
+			for _, k := range txs {
+				if pr, exist := m.cache.Get(k); exist {
+					objectpool.PutTransactionObject(pr.(*types.FurtherTransaction))
+					m.cache.Del(k)
+				}
+			}
+		}
+	}
+}
+
+func (m *memChaindb) receiptSaveTask() {
+	for {
+		select {
+		case rs := <-m.tosaveReceipts:
+			log.Debug("save receipt task running", " len receipts ", len(rs), " remain in channel ", len(m.tosaveReceipts))
+			batch := m.database.NewBatch()
+			delk := make([]string, 0, len(rs))
+			for _, r := range rs {
+				k := receiptKey(r.Txhash)
+				d, e := r.Encode()
+				if e != nil {
+					log.Trace("receipt encode error failed to store", "txhash ", r.Txhash)
+					continue
+				}
+				cd, err := utils.GzipEncode(d)
+				if err != nil {
+					log.Error("save receipt to database", "gzip err ", err)
+					continue
+				}
+				batch.Set(k, cd)
+				delk = append(delk, k)
+			}
+			batch.Write()
+			for _, k := range delk {
+				if pr, exist := m.cache.Get(k); exist {
+					objectpool.PutReceiptObject(pr.(*types.Receipt))
+					m.cache.Del(k)
+				}
+			}
+		}
+	}
+}
+
+func (m *memChaindb) blockSaveTask() {
+	var duration = time.Second * 10
+	tm := time.NewTicker(duration)
+	defer tm.Stop()
+
+	for {
+		select {
+		case block := <-m.tosaveBlock:
+			log.Debug("save block task running", " remain in channel ", len(m.tosaveBlock))
+			{
+				hk := blockHeaderKey(block.Header.Number)
+				dh, e := block.Header.Encode()
+				if e != nil {
+					log.Trace("block header encode error failed to store", "number ", block.Header.Number)
+					continue
+				}
+				m.database.Set(hk, dh)
+			}
+			{
+				bodyk := blockBodyKey(block.Header.Number)
+				dbody, e := block.Body.Encode()
+				if e != nil {
+					log.Trace("block body encode error failed to store", "number ", block.Header.Number)
+					continue
+				}
+				cd, err := utils.GzipEncode(dbody)
+				if err != nil {
+					log.Error("save block body to database", "gzip err ", err)
+					continue
+				}
+
+				m.database.Set(bodyk, cd)
+				m.cache.Del(bodyk)
+			}
+		case <-tm.C:
+			if m.startHeight != nil {
+				h := m.CurrentHeight()
+				for h.Cmp(m.startHeight.Add(m.startHeight, big10)) > 0 {
+					hk := blockHeaderKey(m.startHeight)
+					m.cache.Del(hk)
+					m.startHeight = new(big.Int).Add(m.startHeight, big1)
+				}
+			}
+			tm.Reset(duration)
+		}
+	}
+}
 func (m *memChaindb) storeTask() {
-
-	go func() {
-		for {
-			select {
-			case rs := <-m.tosaveReceipts:
-				batch := m.database.NewBatch()
-				delk := make([]string, 0, len(rs))
-				for _, r := range rs {
-					k := receiptKey(r.Txhash)
-					d, e := r.Encode()
-					if e != nil {
-						log.Trace("receipt encode error failed to store", "txhash ", r.Txhash)
-						continue
-					}
-					cd, err := utils.GzipEncode(d)
-					if err != nil {
-						log.Error("save receipt to database", "gzip err ", err)
-						continue
-					}
-					batch.Set(k, cd)
-					delk = append(delk, k)
-				}
-				batch.Write()
-				for _, k := range delk {
-					if pr, exist := m.cache.Get(k); exist {
-						objectpool.PutReceiptObject(pr.(*types.Receipt))
-						m.cache.Del(k)
-					}
-				}
-			}
-		}
-	}()
-
-	go func() {
-		for {
-			select {
-			case txs := <-m.tosaveTxs:
-				batch := m.database.NewBatch()
-				delk := make([]string, 0, len(txs))
-				for _, tx := range txs {
-					k := transactionKey(tx.Hash())
-					d, e := tx.Encode()
-					if e != nil {
-						log.Trace("transaction encode error failed to store", "txhash ", tx.Hash())
-						continue
-					}
-					cd, err := utils.GzipEncode(d)
-					if err != nil {
-						log.Error("save transaction to database", "gzip err ", err)
-						continue
-					}
-
-					batch.Set(k, cd)
-					delk = append(delk, k)
-				}
-				batch.Write()
-				for _, k := range txs {
-					if pr, exist := m.cache.Get(k); exist {
-						objectpool.PutTransactionObject(pr.(*types.FurtherTransaction))
-						m.cache.Del(k)
-					}
-				}
-			}
-		}
-	}()
-
-	go func() {
-		duration := time.Second * 10
-		tm := time.NewTicker(duration)
-		defer tm.Stop()
-
-		for {
-			select {
-			case block := <-m.tosaveBlock:
-				{
-					hk := blockHeaderKey(block.Header.Number)
-					dh, e := block.Header.Encode()
-					if e != nil {
-						log.Trace("block header encode error failed to store", "number ", block.Header.Number)
-						continue
-					}
-					m.database.Set(hk, dh)
-				}
-				{
-					bodyk := blockBodyKey(block.Header.Number)
-					dbody, e := block.Body.Encode()
-					if e != nil {
-						log.Trace("block body encode error failed to store", "number ", block.Header.Number)
-						continue
-					}
-					cd, err := utils.GzipEncode(dbody)
-					if err != nil {
-						log.Error("save block body to database", "gzip err ", err)
-						continue
-					}
-
-					m.database.Set(bodyk, cd)
-					m.cache.Del(bodyk)
-				}
-			case <-tm.C:
-				if m.startHeight != nil {
-					h := m.CurrentHeight()
-					for h.Cmp(m.startHeight.Add(m.startHeight, big10)) > 0 {
-						hk := blockHeaderKey(m.startHeight)
-						m.cache.Del(hk)
-						m.startHeight = new(big.Int).Add(m.startHeight, big1)
-					}
-				}
-				tm.Reset(duration)
-			}
-		}
-	}()
+	go m.receiptSaveTask()
+	go m.txsaveTask()
+	go m.blockSaveTask()
 }
 
 func (m *memChaindb) toStoreReceipts(receipts []*types.Receipt) {
@@ -277,18 +282,22 @@ func (m *memChaindb) SaveTransactions(txs []*types.FurtherTransaction) {
 		k := transactionKey(txs[i].Hash())
 		m.cache.Set(k, txs[i])
 	}
-	m.toStoreTransactions(txs)
+	if length > 0 {
+		m.toStoreTransactions(txs)
+	}
 }
 
 func (m *memChaindb) SaveReceipts(rs []*types.Receipt) {
 	log.Debug("in save receipts ", " txs number ", len(rs))
-	for i := 0; i < len(rs); i++ {
+	rsl := len(rs)
+	for i := 0; i < rsl; i++ {
 		r := rs[i]
 		k := receiptKey(r.Txhash)
 		m.cache.Set(k, r)
 	}
-	m.toStoreReceipts(rs)
-
+	if rsl > 0 {
+		m.toStoreReceipts(rs)
+	}
 }
 
 func (m *memChaindb) GetTransaction(hash types.Hash) *types.FurtherTransaction {
