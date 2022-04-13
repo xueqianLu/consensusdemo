@@ -85,7 +85,7 @@ func (m *Miner) roundloop() {
 				}
 				m.txp.ResetTxs(hashes)
 			}
-			if empty {
+			if empty || len(committxs) > 0 {
 				m.packageCh <- newPrepareBlock{roundInfo.Timestamp, committxs}
 			}
 		}
