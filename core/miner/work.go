@@ -121,7 +121,10 @@ func (m *Miner) genBlock() {
 			m.lentry.Info("mined new block ", " number ", block.Header.Number.Uint64(), " txs ", len(block.Body.Txs))
 			if len(m.packageCh) <= 1 {
 				// delay commit global.
-				m.engine.Commit()
+				err := m.engine.Commit()
+				if err != nil {
+					m.lentry.Error("worker engine commit", " err ", err)
+				}
 			}
 			prepared.packedtxs = nil
 		}

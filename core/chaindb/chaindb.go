@@ -7,6 +7,7 @@ import (
 	"github.com/hashrs/consensusdemo/db"
 	"github.com/hashrs/consensusdemo/db/memdb"
 	"github.com/hashrs/consensusdemo/types"
+	"github.com/hashrs/consensusdemo/utils"
 	log "github.com/sirupsen/logrus"
 	"math/big"
 	"sync/atomic"
@@ -76,8 +77,12 @@ func (m *memChaindb) storeTask() {
 						log.Trace("receipt encode error failed to store", "txhash ", r.Txhash)
 						continue
 					}
-					//log.Debug("save receipt to database", "hash ", k)
-					batch.Set(k, d)
+					cd, err := utils.GzipEncode(d)
+					if err != nil {
+						log.Error("save receipt to database", "gzip err ", err)
+						continue
+					}
+					batch.Set(k, cd)
 					delk = append(delk, k)
 				}
 				batch.Write()
@@ -104,7 +109,13 @@ func (m *memChaindb) storeTask() {
 						log.Trace("transaction encode error failed to store", "txhash ", tx.Hash())
 						continue
 					}
-					batch.Set(k, d)
+					cd, err := utils.GzipEncode(d)
+					if err != nil {
+						log.Error("save transaction to database", "gzip err ", err)
+						continue
+					}
+
+					batch.Set(k, cd)
 					delk = append(delk, k)
 				}
 				batch.Write()
@@ -142,7 +153,13 @@ func (m *memChaindb) storeTask() {
 						log.Trace("block body encode error failed to store", "number ", block.Header.Number)
 						continue
 					}
-					m.database.Set(bodyk, dbody)
+					cd, err := utils.GzipEncode(dbody)
+					if err != nil {
+						log.Error("save block body to database", "gzip err ", err)
+						continue
+					}
+
+					m.database.Set(bodyk, cd)
 					m.cache.Del(bodyk)
 				}
 			case <-tm.C:
@@ -207,8 +224,9 @@ func (m *memChaindb) GetBlockBody(num *big.Int) *core.BlockBody {
 		if !exist {
 			return nil
 		}
+		yd, _ := utils.GzipDecode(d)
 		var body core.BlockBody
-		if err := json.Unmarshal(d, &body); err != nil {
+		if err := json.Unmarshal(yd, &body); err != nil {
 			return nil
 		}
 		return &body
@@ -282,8 +300,9 @@ func (m *memChaindb) GetTransaction(hash types.Hash) *types.FurtherTransaction {
 		if !exist {
 			return nil
 		}
+		yd, _ := utils.GzipDecode(d)
 		var tx types.FurtherTransaction
-		if err := json.Unmarshal(d, &tx); err != nil {
+		if err := json.Unmarshal(yd, &tx); err != nil {
 			return nil
 		}
 		return &tx
@@ -301,9 +320,10 @@ func (m *memChaindb) GetReceipt(txhash types.Hash) *types.Receipt {
 			//log.Debug("get receipt from database failed", "txhash", txhash.String())
 			return nil
 		}
+		yd, _ := utils.GzipDecode(d)
 		//log.Debug("get receipt from database succeed", "txhash", txhash.String())
 		var r types.Receipt
-		if err := json.Unmarshal(d, &r); err != nil {
+		if err := json.Unmarshal(yd, &r); err != nil {
 			return nil
 		}
 		return &r
