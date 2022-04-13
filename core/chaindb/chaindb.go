@@ -67,6 +67,8 @@ func (m *memChaindb) storeTask() {
 		for {
 			select {
 			case rs := <-m.tosaveReceipts:
+				batch := m.database.NewBatch()
+				delk := make([]string, 0, len(rs))
 				for _, r := range rs {
 					k := receiptKey(r.Txhash)
 					d, e := r.Encode()
@@ -75,7 +77,11 @@ func (m *memChaindb) storeTask() {
 						continue
 					}
 					//log.Debug("save receipt to database", "hash ", k)
-					m.database.Set(k, d)
+					batch.Set(k, d)
+					delk = append(delk, k)
+				}
+				batch.Write()
+				for _, k := range delk {
 					if pr, exist := m.cache.Get(k); exist {
 						objectpool.PutReceiptObject(pr.(*types.Receipt))
 						m.cache.Del(k)
@@ -89,6 +95,8 @@ func (m *memChaindb) storeTask() {
 		for {
 			select {
 			case txs := <-m.tosaveTxs:
+				batch := m.database.NewBatch()
+				delk := make([]string, 0, len(txs))
 				for _, tx := range txs {
 					k := transactionKey(tx.Hash())
 					d, e := tx.Encode()
@@ -96,7 +104,11 @@ func (m *memChaindb) storeTask() {
 						log.Trace("transaction encode error failed to store", "txhash ", tx.Hash())
 						continue
 					}
-					m.database.Set(k, d)
+					batch.Set(k, d)
+					delk = append(delk, k)
+				}
+				batch.Write()
+				for _, k := range txs {
 					if pr, exist := m.cache.Get(k); exist {
 						objectpool.PutTransactionObject(pr.(*types.FurtherTransaction))
 						m.cache.Del(k)
