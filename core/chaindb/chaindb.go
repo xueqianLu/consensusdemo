@@ -76,13 +76,8 @@ func (m *memChaindb) txsaveTask() {
 					log.Trace("transaction encode error failed to store", "txhash ", tx.Hash())
 					continue
 				}
-				cd, err := utils.GzipEncode(d)
-				if err != nil {
-					log.Error("save transaction to database", "gzip err ", err)
-					continue
-				}
 
-				batch.Set(k, cd)
+				batch.Set(k, d)
 				delk = append(delk, k)
 			}
 			batch.Write()
@@ -110,12 +105,7 @@ func (m *memChaindb) receiptSaveTask() {
 					log.Trace("receipt encode error failed to store", "txhash ", r.Txhash)
 					continue
 				}
-				cd, err := utils.GzipEncode(d)
-				if err != nil {
-					log.Error("save receipt to database", "gzip err ", err)
-					continue
-				}
-				batch.Set(k, cd)
+				batch.Set(k, d)
 				delk = append(delk, k)
 			}
 			batch.Write()
@@ -309,9 +299,8 @@ func (m *memChaindb) GetTransaction(hash types.Hash) *types.FurtherTransaction {
 		if !exist {
 			return nil
 		}
-		yd, _ := utils.GzipDecode(d)
 		var tx types.FurtherTransaction
-		if err := json.Unmarshal(yd, &tx); err != nil {
+		if err := json.Unmarshal(d, &tx); err != nil {
 			return nil
 		}
 		return &tx
@@ -329,10 +318,9 @@ func (m *memChaindb) GetReceipt(txhash types.Hash) *types.Receipt {
 			//log.Debug("get receipt from database failed", "txhash", txhash.String())
 			return nil
 		}
-		yd, _ := utils.GzipDecode(d)
 		//log.Debug("get receipt from database succeed", "txhash", txhash.String())
 		var r types.Receipt
-		if err := json.Unmarshal(yd, &r); err != nil {
+		if err := json.Unmarshal(d, &r); err != nil {
 			return nil
 		}
 		return &r
