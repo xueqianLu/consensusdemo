@@ -39,19 +39,17 @@ func keyAccount(addr core.Account) string {
 }
 
 func (m *statedb) commit() error {
-	batch := m.state.NewBatch()
 	m.dirty.Range(func(key, value interface{}) bool {
 		addr := key.(core.Account)
 		balan := value.(*big.Int)
 		k := keyAccount(addr)
 		v := balan.Text(10)
-		batch.Set(k, []byte(v))
+		m.state.Set(k, []byte(v))
 		m.cache.Set(key, value)
 		m.dirty.Delete(key)
 		return true
 	})
-	err := batch.Write()
-	return err
+	return nil
 }
 
 func (m *statedb) setValue(addr core.Account, value *big.Int) {

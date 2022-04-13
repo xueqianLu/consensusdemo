@@ -56,9 +56,7 @@ func (m *memChaindb) saveHeight(n *big.Int) {
 	if m.startHeight == nil {
 		m.startHeight = new(big.Int).Set(n)
 	}
-	hstr := n.Text(10)
-	k := chainHeightKey()
-	m.database.Set(k, []byte(hstr))     // db save string
+	//m.database.Set(k, []byte(hstr))     // db save string, remove to blockSaveTask.
 	m.height.Store(new(big.Int).Set(n)) // cache save *big.Int
 }
 
@@ -67,8 +65,6 @@ func (m *memChaindb) txsaveTask() {
 		select {
 		case txs := <-m.tosaveTxs:
 			log.Debug("save txs task running", " len txs ", len(txs), " remain in channel ", len(m.tosaveTxs))
-			batch := m.database.NewBatch()
-			delk := make([]string, 0, len(txs))
 			for _, tx := range txs {
 				k := transactionKey(tx.Hash())
 				d, e := tx.Encode()
@@ -77,11 +73,7 @@ func (m *memChaindb) txsaveTask() {
 					continue
 				}
 
-				batch.Set(k, d)
-				delk = append(delk, k)
-			}
-			batch.Write()
-			for _, k := range txs {
+				m.database.Set(k, d)
 				if pr, exist := m.cache.Get(k); exist {
 					objectpool.PutTransactionObject(pr.(*types.FurtherTransaction))
 					m.cache.Del(k)
@@ -96,8 +88,6 @@ func (m *memChaindb) receiptSaveTask() {
 		select {
 		case rs := <-m.tosaveReceipts:
 			log.Debug("save receipt task running", " len receipts ", len(rs), " remain in channel ", len(m.tosaveReceipts))
-			batch := m.database.NewBatch()
-			delk := make([]string, 0, len(rs))
 			for _, r := range rs {
 				k := receiptKey(r.Txhash)
 				d, e := r.Encode()
@@ -105,11 +95,7 @@ func (m *memChaindb) receiptSaveTask() {
 					log.Trace("receipt encode error failed to store", "txhash ", r.Txhash)
 					continue
 				}
-				batch.Set(k, d)
-				delk = append(delk, k)
-			}
-			batch.Write()
-			for _, k := range delk {
+				m.database.Set(k, d)
 				if pr, exist := m.cache.Get(k); exist {
 					objectpool.PutReceiptObject(pr.(*types.Receipt))
 					m.cache.Del(k)
@@ -152,6 +138,12 @@ func (m *memChaindb) blockSaveTask() {
 
 				m.database.Set(bodyk, cd)
 				m.cache.Del(bodyk)
+			}
+			{
+				// save height
+				k := chainHeightKey()
+				hstr := block.Header.Number.Text(10)
+				m.database.Set(k, []byte(hstr)) // db save height string.
 			}
 		case <-tm.C:
 			if m.startHeight != nil {
