@@ -59,9 +59,11 @@ func (m *Miner) roundloop() {
 			}
 			m.lentry.Debug("worker got new round,", " time=", roundInfo.Timestamp, " tx count=", len(roundInfo.Txsinfo))
 			// new round to gen block.
+			empty := true
 			committxs := make([]*types.FurtherTransaction, 0, maxPackTxs)
 			packedtxs := roundInfo.Txsinfo
 			for _, packed := range packedtxs {
+				empty = false
 				hashes := packed.Hashs()
 				for _, hash := range hashes {
 					m.lentry.Debug("worker get txs", "hash ", hash, "current round time is ", roundInfo.Timestamp)
@@ -83,7 +85,9 @@ func (m *Miner) roundloop() {
 				}
 				m.txp.ResetTxs(hashes)
 			}
-			m.packageCh <- newPrepareBlock{roundInfo.Timestamp, committxs}
+			if empty {
+				m.packageCh <- newPrepareBlock{roundInfo.Timestamp, committxs}
+			}
 		}
 	}
 }

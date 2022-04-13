@@ -62,7 +62,7 @@ type FurtherTransaction struct {
 	nhash *Hash `json:"-"`
 }
 
-func (t FurtherTransaction) Hash() Hash {
+func (t *FurtherTransaction) Hash() Hash {
 	if t.nhash == nil {
 		h := t.Transaction.Hash()
 		t.nhash = &Hash{h}
